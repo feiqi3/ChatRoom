@@ -1,6 +1,8 @@
 #include "../Configuration.hpp"
 #include "../Connection.hpp"
 #include <cstdio>
+#include <netinet/in.h>
+#define SERVER_IP INADDR_ANY
 int main(){
     Connection conn(SERVER_IP,SERVER_PORT,true);
     conn.open();

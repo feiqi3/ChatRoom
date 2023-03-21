@@ -5,21 +5,29 @@
 #include <chrono>
 
 void ChatServer::run() {
-  spdlog::info("Server is online.");
   Connection listenConn(INADDR_ANY, SERVER_PORT);
   try {
     listenConn.bind();
   } catch (badBinding) {
-    spdlog::critical("Critical error, program terminated.");
+    spdlog::critical("Binding error. Critical error, program terminated.");
     exit(0);
   }
+
+  try {
+    listenConn.listen();
+  } catch (badListening) {
+    spdlog::critical("Listening error. Critical error, program terminated.");
+    exit(0);
+  }
+
   std::unique_ptr<Connection> inConn;
   try {
     inConn = listenConn.accept(listenConn);
   } catch (badAcception) {
-    spdlog::critical("Critical error, program terminated.");
+    spdlog::critical("Accept error, Critical error, program terminated.");
     exit(0);
   }
+  spdlog::info("Server is online.");
 
   std::thread(&ChatRoom::connHandler, &chatRoom, std::move(inConn));
 }
@@ -138,7 +146,7 @@ void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
   std::vector<Connection> broadcastList;
   std::shared_lock<std::shared_mutex> lock(ioLock);
   for (auto &i : this->UserConns) {
-    if(i.first == src){
+    if (i.first == src) {
       continue;
     }
     sockfd tmpFd = dup(i.second->getSock());
