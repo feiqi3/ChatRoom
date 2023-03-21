@@ -19,35 +19,35 @@ void ChatServer::run() {
     spdlog::critical("Listening error. Critical error, program terminated.");
     exit(0);
   }
-
-  std::unique_ptr<Connection> inConn;
-  try {
-    inConn = listenConn.accept(listenConn);
-  } catch (badAcception) {
-    spdlog::critical("Accept error, Critical error, program terminated.");
-    exit(0);
+  spdlog::info("Server is online, waiting for new connection.");
+  while (1) {
+    std::unique_ptr<Connection> inConn;
+    try {
+      inConn = listenConn.accept(listenConn);
+    } catch (badAcception) {
+      spdlog::critical("Accept error, Critical error, program terminated.");
+      exit(0);
+    }
+    chatRoom.connHandler(std::move(inConn));
+    // std::thread(&ChatRoom::connHandler, &chatRoom, std::move(inConn));
   }
-  spdlog::info("Server is online.");
-
-  std::thread(&ChatRoom::connHandler, &chatRoom, std::move(inConn));
 }
 
-void ChatRoom::connHandler(std::unique_ptr<Connection> &&conn) noexcept {
+void ChatRoom::connHandler(std::unique_ptr<Connection> &&conn) {
   // recv -> code == 0 , connection closed
   // code < 0 : error
+  spdlog::info("New connection from {}", conn->getAddr());
   auto &connTmp = writeUserMap(std::move(conn));
   auto addrIn = connTmp->getAddr();
-  while (1) {
-    try {
-      connTmp->recv();
-    } catch (badReceiving) {
-      return;
-    }
-    int ret =
-        serverParser.parser(addrIn, connTmp->getBuf(), connTmp->getBufSize());
-    if (ret < 0)
-      break;
+  try {
+    connTmp->recv();
+  } catch (badReceiving) {
+    return;
   }
+  spdlog::info("Start parsing");
+  int ret =
+      serverParser.parser(addrIn, connTmp->getBuf(), connTmp->getBufSize());
+  return;
 }
 
 std::unique_ptr<Connection> &
@@ -97,8 +97,8 @@ int ChatRoom::toTarUser(std::string &addr,
 
 int ChatRoom::msgSend(const std::string &src, const std::string &dst, char *msg,
                       size_t msglen) {
-  spdlog::info("C2C: Msg from {} to {}", src, dst);
-  spdlog::trace("Msg from {} to {}: \"{}\"", src, dst, msg);
+  //spdlog::info("C2C: Msg from {} to {}", src, dst);
+  spdlog::info("Msg from {} to {}: \"{}\"", src, dst, msg);
   std::shared_lock<std::shared_mutex> lock(ioLock);
   if (!UserConns.contains(dst))
     // User does't exit

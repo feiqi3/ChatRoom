@@ -10,8 +10,8 @@
 
 #define SERVERNAME "Server"
 
-#define CLIENT_CLOSED_ERROR "A"
-#define NO_TARGET_CLIENT_ERROR "B"
+#define CLIENT_CLOSED_ERROR "Target client closed."
+#define NO_TARGET_CLIENT_ERROR "No target client."
 
 class ChatServer {
 public:
@@ -24,7 +24,7 @@ public:
   int toTarUser(std::string &addr, std::function<bool(Connection &tar)>);
 
   // When conn in, this function will do the rest of work
-  void connHandler(std::unique_ptr<Connection> &&) noexcept;
+  void connHandler(std::unique_ptr<Connection> &&);
   int msgSend(const std::string &src,const std::string &dst, char *msg, size_t msglen);
   void msgBroadcast(std::string &src, char *msg, size_t msglen);
   std::unordered_map<std::string, std::unique_ptr<Connection>> UserConns;

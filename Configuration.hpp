@@ -41,7 +41,6 @@ public:
     auto stdoutLogger = spdlog::stdout_color_mt("ServerLogger");
     spdlog::register_logger(stdoutLogger);
 #endif
-
     spdlog::flush_every(std::chrono::seconds(1));
     spdlog::set_level(spdlog::level::debug);
 #ifdef PROD

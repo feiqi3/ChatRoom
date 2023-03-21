@@ -6,9 +6,9 @@
 int main(){
     Connection conn(SERVER_IP,SERVER_PORT,true);
     conn.open();
-    char n[] = "0 192.1.1.1 no";
+    char n[] = "3 I";
     conn.send(n,sizeof(n));
     conn.recv();
-    std::printf("%s",conn.getBuf());
+    std::printf("11 %s",conn.getBuf());
     return 0;
 }

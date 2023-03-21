@@ -33,15 +33,9 @@ public:
   MsgTokenByte(const MsgToken &mt)
       : len(mt.token != 2 ? 2 + 20 + mt.msg.size() : 2 + mt.msg.size()) {
     byte = new char[len];
-    if (mt.token != 3) {
-      // note, ip followed by token
-      memset(byte, 0, len);
-      memcpy(byte + 2, mt.addr.c_str(), mt.addr.size());
-      memcpy(byte + 2 + mt.addr.size() + 2, mt.msg.c_str(), mt.msg.size());
-    } else {
-      memcpy(byte + 2, mt.msg.c_str(), mt.msg.size());
-    }
-    switch (mt.token) {
+    auto msg = mt.msg;
+    char tok = mt.token;
+    switch (tok) {
     case MsgToken::To: {
       byte[0] = 0;
       break;
@@ -59,9 +53,20 @@ public:
       break;
     }
     default: {
-      spdlog::critical("Unexpected token.");
-      std::terminate();
+      spdlog::error("Unexpected token.");
+      byte[0] = 3;
+      msg = "Error msg.";
+      break;
     }
+    }
+
+    if (tok != 3) {
+      // note, ip followed by token
+      memset(byte, 0, len);
+      memcpy(byte + 2, mt.addr.c_str(), mt.addr.size());
+      memcpy(byte + 2 + mt.addr.size() + 2, mt.msg.c_str(), mt.msg.size());
+    } else {
+      memcpy(byte + 2, mt.msg.c_str(), mt.msg.size());
     }
   }
   ~MsgTokenByte() { delete[] byte; }
@@ -76,10 +81,11 @@ public:
   friend class ChatRoom;
   inline int parser(std::string &inAddr, const char *in, int len) {
     spdlog::trace("New thread {}", getpid());
-    spdlog::trace("receive message from {}, :\"{}\" ", inAddr, in);
+    spdlog::info("receive message from {}, :\"{}\" ", inAddr, in);
+
     char token = in[0];
     // Broadcast
-    if (token == 2) {
+    if (token == '2') {
       std::string msg = std::string(in + 2);
       //组装一个广播信息
       //格式是： Broadcast srcIP msg
@@ -89,11 +95,11 @@ public:
       return 1;
       // client to client
       // token in
-    } else if (token == 0) {
+    } else if (token == '0') {
       int iplen;
       auto tar = getIp(in, iplen, len);
       if (!chatRoom.isUserExist(tar)) {
-        if (errorHandler(inAddr, CLIENT_CLOSED_ERROR) < 0) {
+        if (errorHandler(inAddr, NO_TARGET_CLIENT_ERROR) < 0) {
           return -1;
         }
         return 1;
@@ -112,7 +118,7 @@ public:
         }
       }
       return 1;
-    } else if (token == 3) {
+    } else if (token == '3') {
       if (in[2] == 'I') {
         int ret = sendOnlineUsers(inAddr);
         if (ret < 0)
@@ -135,14 +141,21 @@ private:
     std::shared_lock<std::shared_mutex> lock(chatRoom.ioLock);
     auto &&i = chatRoom.UserConns.begin();
     //构造IP字符串
+    int flag = 0;
     while (1) {
       std::stringstream ss;
       ss << "I ";
       int len = 0;
-      for (; i != chatRoom.UserConns.end() || len < 1400; ++i, len += 20) {
+      for (; len < 1400; ++i, len += 20) {
+        if (i == chatRoom.UserConns.end()) {
+          flag = 1;
+          break;
+        }
         ss << i->first;
       }
       svec.push_back(ss.str());
+      if (flag)
+        break;
     }
     lock.unlock();
     //发送IP
