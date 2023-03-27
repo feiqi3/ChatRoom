@@ -1,6 +1,5 @@
 #include "ChatSave.hpp"
 #include "Display.hpp"
-#include "spdlog/fmt/bundled/os.h"
 #include "spdlog/spdlog.h"
 #include <ctime>
 #include <fstream>
@@ -9,12 +8,12 @@
 
 void ChatSL::save(const std::string &addr, std::string msg, char from,
                   std::time_t timeStamp) {
-  auto file = fmt::output_file("chatSave/" + addr, fmt::file::WRONLY |
-                                                       fmt::file::APPEND |
-                                                       fmt::file::CREATE);
-  file.print("{}\n", from);
-  file.print("{}\n", msg);
-  file.print("{:%Y-%m-%d %H:%M:%S}\n", timeStamp);
+  std::ofstream file("chatSave/" + addr,
+                     std::ofstream::app | std::ofstream::out);
+  std::string fmtTime = fmt::format("{:%Y-%m-%d %H:%M:%S}\n", timeStamp);
+  file << from << "\n";
+  file << msg << "\n";
+  file << fmtTime << std::endl;
 }
 
 auto ChatSL::load(const std::string &addr)
