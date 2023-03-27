@@ -52,6 +52,7 @@ sockaddr_in Connection::genAddr(const std::string &addr, const int port) {
 }
 
 void Connection::open() {
+  spdlog::info("Connecting to {}", addrStr);
   if (connect(conSock, (sockaddr *)&addr, sizeof(addr)) < 0) {
     if (errno == EISCONN) {
       spdlog::debug("Connecting to a connected socket, address: {}", addrStr);
@@ -91,7 +92,7 @@ Flag_accept:
     }
     throw badAcception();
   }
-  auto ret = std::make_unique<Connection>(fdin, std::move(inSock),true);
+  auto ret = std::make_unique<Connection>(fdin, std::move(inSock), true);
   return ret;
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #ifndef CONFIG
 #define CONFIG
 #include <arpa/inet.h>
@@ -9,12 +10,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <memory>
 #include <mutex>
 #include <netinet/in.h>
 #include <spdlog/common.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/fmt/bundled/os.h>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string.h>
@@ -23,6 +26,7 @@
 #include <sys/types.h>
 #include <thread>
 #include <unistd.h>
+
 constexpr int MAX_THREAD = 128;
 constexpr ushort SERVER_PORT = 6666;
 class spdConfig {
@@ -33,16 +37,20 @@ public:
     }
     isInit = true;
 
-    auto chatFileLogger =
-        spdlog::basic_logger_mt("ChatFileLogger", "ChatroomOnlineLogger");
-        chatFileLogger->set_level(spdlog::level::trace);
-    spdlog::register_logger(chatFileLogger);
+    auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+        "ChatRoomLogger", true);
+
 #ifdef SERVER
-    auto stdoutLogger = spdlog::stdout_color_mt("ServerLogger");
-    spdlog::register_logger(stdoutLogger);
+    auto serverSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>(
+        "Server", (spdlog::sinks_init_list){serverSink, fileSink}));
+#else
+    spdlog::set_default_logger(
+        std::make_shared<spdlog::logger>("Server", fileSink));
 #endif
+
     spdlog::flush_every(std::chrono::seconds(1));
-    spdlog::set_level(spdlog::level::debug);
+    spdlog::set_level(spdlog::level::trace);
 #ifdef PROD
     spdlog::flush_every(std::chrono::seconds(5));
     spdlog::set_level(spdlog::level::warn);
