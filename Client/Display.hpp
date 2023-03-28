@@ -74,4 +74,9 @@ public:
       -> std::shared_ptr<ChatBubble>;
 };
 
+class Interact{
+  //TODO: catch sigint and goto a Command line place 
+  //where to give command 
+  //and then jump to target
+};
 #endif
