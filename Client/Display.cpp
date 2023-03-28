@@ -183,6 +183,13 @@ auto BubbleFactory::bubbleMaker(const std::string &title,
     break;
   }
 
+  case 'S': {
+    auto ret = std::make_shared<UsrBubble>(msg);
+    ret->timeStamp = timeStamp;
+    ret->loadFromFile = true;
+    return ret;
+    break;
+  }
   default: {
     spdlog::error("Chat file loading error");
     auto ret = std::make_shared<ServerBubble>(

@@ -60,14 +60,9 @@ public:
     }
     }
 
-    if (tok != 3) {
-      // note, ip followed by token
-      memset(byte, 0, len);
+      memset(byte + 1, '\0', len - 1);
       memcpy(byte + 2, mt.addr.c_str(), mt.addr.size());
       memcpy(byte + 2 + mt.addr.size() + 2, mt.msg.c_str(), mt.msg.size());
-    } else {
-      memcpy(byte + 2, mt.msg.c_str(), mt.msg.size());
-    }
   }
   ~MsgTokenByte() { delete[] byte; }
   char *byte;
@@ -76,7 +71,7 @@ public:
 
 char *genErrorMsg();
 
-class MsgPairParserServer {
+class MsgPairParserClient {
 public:
   friend class ChatRoom;
   inline int parser(std::string &inAddr, const char *in, int len) {
@@ -84,7 +79,7 @@ public:
     spdlog::info("receive message from {}, :\"{}\" ", inAddr, in);
 
     char token = in[0];
-    // Broadcast
+    // 广播信息
     if (token == '2') {
       std::string msg = std::string(in + 2);
       //组装一个广播信息
@@ -93,13 +88,13 @@ public:
       MsgTokenByte tokenByte(msgToken);
       chatRoom.msgBroadcast(inAddr, tokenByte.byte, tokenByte.len);
       return 1;
-      // client to client
-      // token in
+      //组装一个端对端信息
+      //格式是 From scrIp msg
     } else if (token == '0') {
       int iplen;
       auto tar = getIp(in, iplen, len);
       if (!chatRoom.isUserExist(tar)) {
-        if (errorHandler(inAddr, NO_TARGET_CLIENT_ERROR) < 0) {
+        if (errorHandler(inAddr,tar, NO_TARGET_CLIENT_ERROR) < 0) {
           return -1;
         }
         return 1;
@@ -113,11 +108,12 @@ public:
       auto msgbyte = MsgTokenByte(token);
       int ret = chatRoom.msgSend(inAddr, tar, msgbyte.byte, msgbyte.len);
       if (ret == -1) {
-        if (errorHandler(inAddr, CLIENT_CLOSED_ERROR) < 0) {
+        if (errorHandler(inAddr,tar, CLIENT_CLOSED_ERROR) < 0) {
           return -1;
         }
       }
       return 1;
+      //请求信息，暂时无用
     } else if (token == '3') {
       if (in[2] == 'I') {
         int ret = sendOnlineUsers(inAddr);
@@ -194,8 +190,13 @@ private:
     return addr;
   }
 
-  int errorHandler(const std::string &inAddr, const std::string &errmsg) {
-    MsgTokenByte msgErr(MsgToken(MsgToken::Note, errmsg, serverString));
+  int errorHandler(const std::string &inAddr,const std::string &tar, const std::string &errmsg) {
+    //组装一条错误信息
+    //格式是 Note scrIp note
+    //其中Ip是聊天时来源的ip
+    //广播时不会发送错误
+    //只有端对端才有
+    MsgTokenByte msgErr(MsgToken(MsgToken::Note, errmsg, tar));
     try {
       std::string ServerName(SERVERNAME);
       chatRoom.msgSend(ServerName, inAddr, msgErr.byte, msgErr.len);

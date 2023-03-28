@@ -53,10 +53,13 @@ sockaddr_in Connection::genAddr(const std::string &addr, const int port) {
 
 void Connection::open() {
   spdlog::info("Connecting to {}", addrStr);
+RETRY:
   if (connect(conSock, (sockaddr *)&addr, sizeof(addr)) < 0) {
     if (errno == EISCONN) {
       spdlog::debug("Connecting to a connected socket, address: {}", addrStr);
       return;
+    } else if (errno == EINTR) {
+      goto RETRY;
     }
     throw badConnection(addrStr);
   }
@@ -98,7 +101,11 @@ Flag_accept:
 
 void Connection::listen() {
   spdlog::info("Listening port {}", addr.sin_port);
+RETRY:
   if (::listen(conSock, backlog) < 0) {
+    if (errno == EINTR) {
+      goto RETRY;
+    }
     throw badListening();
   }
 }
