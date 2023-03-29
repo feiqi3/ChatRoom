@@ -29,7 +29,7 @@
 #include <thread>
 #include <unistd.h>
 
-#define SERVER_IP "124.223.13.238"
+#define SERVER_IP "8.130.88.176"
 
 constexpr int MAX_THREAD = 128;
 constexpr ushort SERVER_PORT = 6666;

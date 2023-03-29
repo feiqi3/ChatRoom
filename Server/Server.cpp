@@ -3,6 +3,7 @@
 #include "spdlog/spdlog.h"
 #include <cerrno>
 #include <chrono>
+#include <memory>
 
 void ChatServer::run() {
   Connection listenConn(INADDR_ANY, SERVER_PORT);
@@ -52,8 +53,8 @@ void ChatRoom::connHandler(std::unique_ptr<Connection> &&conn) {
   return;
 }
 
-std::unique_ptr<Connection> &
-ChatRoom::writeUserMap(std::unique_ptr<Connection> &&conn) {
+std::shared_ptr<Connection> &
+ChatRoom::writeUserMap(std::shared_ptr<Connection> &&conn) {
   std::string addr = conn->getAddr();
   std::unique_lock<std::shared_mutex> lock(ioLock);
   return (UserConns[addr] = std::move(conn));
@@ -135,36 +136,30 @@ Flag_send:
 void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
 
   spdlog::info("Broadcast: Msg from {} to all: {}", src, msg);
-  std::vector<Connection> broadcastList;
+  std::vector<std::shared_ptr<Connection>> broadcastList;
   std::shared_lock<std::shared_mutex> lock(ioLock);
   for (auto &i : this->UserConns) {
     if (i.first == src) {
       continue;
     }
-    sockfd tmpFd = dup(i.second->getSock());
-    if (tmpFd < 0) {
-      spdlog::warn("Dup connection failed, sending terminated");
-      continue;
-    }
-    auto tmpAddr = i.second->getSockAddr();
-    Connection tmp(tmpFd, std::move(tmpAddr));
-    broadcastList.push_back(std::move(tmp));
+    auto tmp = i.second;
+    broadcastList.push_back(tmp);
   }
   lock.unlock();
   std::vector<std::thread> broadcastThread;
   for (auto &Conn : broadcastList) {
     std::thread sendMsg([&Conn, msg, msglen, this]() {
       try {
-        Conn.open();
+        Conn->open();
       } catch (badConnection) {
-        auto tmp_addr = Conn.getAddr();
+        auto tmp_addr = Conn->getAddr();
         eraseUserMap(tmp_addr);
         spdlog::info("Failed to connect to {}, connection closed.", tmp_addr);
         return;
       }
       int connTimes = 0;
     Flag_send:
-      auto addrStr = Conn.getAddr();
+      auto addrStr = Conn->getAddr();
 
       if (connTimes > 0) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -177,7 +172,7 @@ void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
         }
       }
       try {
-        Conn.send(msg, msglen);
+        Conn->send(msg, msglen);
       } catch (badSending) {
         connTimes++;
         goto Flag_send;

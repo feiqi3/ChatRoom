@@ -27,11 +27,11 @@ public:
   void connHandler(std::unique_ptr<Connection> &&);
   int msgSend(const std::string &src,const std::string &dst, char *msg, size_t msglen);
   void msgBroadcast(std::string &src, char *msg, size_t msglen);
-  std::unordered_map<std::string, std::unique_ptr<Connection>> UserConns;
+  std::unordered_map<std::string, std::shared_ptr<Connection>> UserConns;
   bool isUserExist(std::string &addr);
 
   mutable std::shared_mutex ioLock;
-  std::unique_ptr<Connection> &writeUserMap(std::unique_ptr<Connection> &&conn);
+  std::shared_ptr<Connection> &writeUserMap(std::shared_ptr<Connection> &&conn);
   void eraseUserMap(const std::string &addr);
 
 
