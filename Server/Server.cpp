@@ -22,7 +22,7 @@ void ChatServer::run() {
   }
   spdlog::info("Server is online, waiting for new connection.");
   while (1) {
-    std::unique_ptr<Connection> inConn;
+    std::shared_ptr<Connection> inConn;
     try {
       inConn = listenConn.accept(listenConn);
     } catch (badAcception) {
@@ -34,7 +34,7 @@ void ChatServer::run() {
   }
 }
 
-void ChatRoom::connHandler(std::unique_ptr<Connection> &&conn) {
+void ChatRoom::connHandler(std::shared_ptr<Connection> &&conn) {
   // recv -> code == 0 , connection closed
   // code < 0 : error
   spdlog::info("New connection from {}", conn->getAddr());

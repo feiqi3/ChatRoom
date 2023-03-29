@@ -85,7 +85,7 @@ public:
   inline sockfd getSock() const { return conSock; }
   inline std::string getAddr() { return addrStr; }
   inline sockaddr_in getSockAddr() { return addr; }
-  static std::unique_ptr<Connection> accept(const Connection &listenConn);
+  static std::shared_ptr<Connection> accept(const Connection &listenConn);
   void open();
   void bind();
   void listen();

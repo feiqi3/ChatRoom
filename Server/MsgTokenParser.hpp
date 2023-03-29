@@ -147,7 +147,7 @@ private:
           flag = 1;
           break;
         }
-        ss << i->first << " ";
+        ss<<" " << i->first << " ";
       }
       svec.push_back(ss.str());
       if (flag)
@@ -156,7 +156,7 @@ private:
     lock.unlock();
     //发送IP
     for (auto &&si : svec) {
-      MsgToken msg((MsgToken::Token)'I', si, serverString);
+      MsgToken msg((MsgToken::Token)'I', si, nullString);
       MsgTokenByte byte(msg);
       try {
         chatRoom.msgSend(serverString, in, byte.byte.get(), byte.len);

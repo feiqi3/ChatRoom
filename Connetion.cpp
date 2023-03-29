@@ -81,7 +81,7 @@ Connection::Connection(sockfd infd, sockaddr_in &&in, bool hasBuf)
   addrStr = std::string(ip);
 }
 
-std::unique_ptr<Connection> Connection::accept(const Connection &listenConn) {
+std::shared_ptr<Connection> Connection::accept(const Connection &listenConn) {
   sockaddr_in inSock;
   socklen_t tmp;
 Flag_accept:
