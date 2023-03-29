@@ -1,3 +1,5 @@
+#define CLIENT
+#include "ChatRoomClient.hpp"
 #include "../Configuration.hpp"
 #include "../Connection.hpp"
 #include "Display.hpp"
@@ -6,20 +8,12 @@
 #include <cstdio>
 #include <netinet/in.h>
 #include <unistd.h>
-#define SERVER_IP INADDR_ANY
+#include "Display.hpp"
 int main() {
-  Connection conn("SERVER_IP", SERVER_PORT, true);
-  UsrBubble usrb("Hello");
-  InBubble ib("ho", "192.168.1.1");
-  ServerBubble sb("Connection down", "from server");
-  ib.print();     
-  usrb.print();    
+  spdlogConfig;
+  chatRoomClient.GetInfoFromServer();
+  chatRoomClient.requestUserLists();
+  interact.commandLine();
 
-  sb.print();
-  /*   conn.open();
-    char n[] = "3 I";
-    conn.send(n, sizeof(n));
-    conn.recv();
-    std::printf("%s", conn.getBuf()); */
   return 0;
 }

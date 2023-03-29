@@ -34,7 +34,7 @@ Connection::Connection(in_addr_t inAddr, uint16_t port, bool hasBuf)
   addrStr = std::string(ip);
   addr.sin_addr.s_addr = htonl(inAddr);
   addr.sin_family = AF_INET;
-  addr.sin_port = port;
+  addr.sin_port =  htons(port);
 
   if ((conSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     spdlog::error("Socket setup error: {}\n", strerror(errno));
@@ -110,7 +110,7 @@ RETRY:
   }
 }
 
-void Connection::send(char *buf, int len) {
+void Connection::send(const char *buf, int len) {
   // About MSG_NOSIGNAL
   //如果遇到乐关闭的socket
   // linux会发送一个SIGPIPE信号
@@ -124,14 +124,12 @@ void Connection::send(char *buf, int len) {
 }
 
 void Connection::recv() {
-  _mutex.lock();
+  std::lock_guard<std::mutex> lock(_mutex);
   memset(buf, '\0', bufSize);
   int ret;
   if ((ret = ::recv(conSock, buf, bufSize - 1, MSG_NOSIGNAL)) > 0) {
-    _mutex.unlock();
     return;
   }
-  _mutex.unlock();
   throw badReceiving(addrStr, ret);
 }
 

@@ -89,7 +89,7 @@ public:
   void open();
   void bind();
   void listen();
-  void send(char *buf, int len);
+  void send(const char *buf, int len);
   void recv();
   inline static void setBacklog(int i) {
     if (i <= 0) {

@@ -3,8 +3,17 @@
 
 #include "ChatRoomClient.hpp"
 #include "ChatSave.hpp"
+#include "Display.hpp"
+#include <condition_variable>
 #include <ctime>
+#include <fstream>
+#include <mutex>
+#include <shared_mutex>
+#include <sstream>
 #include <string>
+#include <utility>
+static auto getWord(const std::string &in, uint &ii, bool &isEnd)
+    -> std::string;
 
 class badParse : public std::exception {
 public:
@@ -38,19 +47,19 @@ public:
     char tok = mt.token;
     switch (tok) {
     case MsgToken::To: {
-      byte[0] = 0;
+      byte[0] = '0';
       break;
     }
     case MsgToken::From: {
-      byte[0] = 1;
+      byte[0] = '1';
       break;
     }
     case MsgToken::Broadcast: {
-      byte[0] = 2;
+      byte[0] = '2';
       break;
     }
     case MsgToken::Note: {
-      byte[0] = 3;
+      byte[0] = '3';
       break;
     }
     default: {
@@ -60,14 +69,20 @@ public:
       break;
     }
     }
-
-    if (tok != 3) {
-      // except for note,other kind of msg ip followed by token
-      memset(byte + 1, '\0', len - 1);
-      memcpy(byte + 2, mt.addr.c_str(), mt.addr.size());
-      memcpy(byte + 2 + mt.addr.size() + 2, mt.msg.c_str(), mt.msg.size());
-    } else {
+    //清空
+    memset(byte + 1, '\0', len - 1);
+    byte[1] = ' ';
+    //如果是广播，发送时不发送地址
+    if (mt.token == mt.Broadcast) {
+      //拷贝消息
       memcpy(byte + 2, mt.msg.c_str(), mt.msg.size());
+    } else {
+      //否则要发送地址
+      byte[1 + mt.addr.size() + 1] = ' ';
+      //拷贝地址
+      memcpy(byte + 2, mt.addr.c_str(), mt.addr.size());
+      //拷贝消息
+      memcpy(byte + 2 + mt.addr.size() + 1, mt.msg.c_str(), mt.msg.size());
     }
   }
   ~MsgTokenByte() { delete[] byte; }
@@ -80,28 +95,64 @@ public:
   void recParser(const char *in, int len) {
     int iplen;
     auto ip = getIp(in, iplen, len);
-
     // 1. from client
     if (in[0] == '1') {
+
+      chatRoomClient.usrs[ip] = makeCVP();
       fromHandler(in, ip);
+      // 2. Broadcast
     } else if (in[0] == '2') {
+      chatRoomClient.usrs[ip] = makeCVP();
       broadHandler(in, ip);
-    } else if (in[0] == 3) {
-      fromHandler(in, ip);
+      // 3. System note
+    } else if (in[0] == '3') {
+      noteHandler(in, ip);
+    } else if (in[0] == 'I') {
+      if (!chatRoomClient.usrListChange) {
+        chatRoomClient.usrs.clear();
+        chatRoomClient.usrs["cmb"] = makeCVP();
+        chatRoomClient.usrs[serverString] = makeCVP();
+
+        chatRoomClient.usrListChange = true;
+      }
+      getUserHandler(in);
+    } else if (in[0] == 'N') {
+      ServerBubble("User list has been updated.", "From client.").print();
+      chatRoomClient.usrListChange = false;
     }
   }
 
 private:
+  void getUserHandler(const std::string &msg) {
+    std::unique_lock<std::shared_mutex> lock(chatRoomClient.iolock);
+    bool isEnd = false;
+    uint ii = 1;
+    std::string Server = getWord(msg, ii, isEnd);
+    while (!isEnd) {
+      std::string ip = getWord(msg, ii, isEnd);
+      chatRoomClient.usrs[ip] = makeCVP();
+    }
+    return;
+  }
+
   void fromHandler(const std::string &msg, const std::string &ip) {
     // 接受从端对段来的信息
     std::string tarMsg = msg.substr(2 + ip.size());
+    if (ip != CurrentChatting) {
+      ServerBubble("A new msg from " + ip, "Bing~").print();
+    }
     chatSL.save(ip, tarMsg, 't', std::time(nullptr));
+  }
+
+  void noteHandler(const std::string &msg, const std::string &ip) {
+    std::string tarMsg = msg.substr(2 + ip.size());
+    chatSL.save(ip, tarMsg, 'B', std::time(nullptr), "Message from server.");
   }
 
   void broadHandler(const std::string &msg, const std::string &ip) {
     // 接受从广播来的信息
     std::string tarMsg = msg.substr(2 + ip.size());
-    chatSL.broadSave(ip, tarMsg, std::time(nullptr));
+    chatSL.save(ip, tarMsg, 'e', std::time(nullptr));
   }
 
   inline std::string getIp(const char *in, int &ipLen, int len) {
@@ -117,6 +168,24 @@ private:
     std::string addr(ip);
     return addr;
   }
-};
+} inline parserClient;
+
+static auto getWord(const std::string &in, uint &ii, bool &isEnd)
+    -> std::string {
+  int ss = in.size();
+  std::stringstream ssm;
+  for (; ii < ss; ++ii) {
+    if (in[ii] != ' ') {
+      ssm << in[ii];
+    } else {
+      ++ii;
+      break;
+    }
+  }
+  if (ii >= ss) {
+    isEnd = true;
+  }
+  return ssm.str();
+}
 
 #endif

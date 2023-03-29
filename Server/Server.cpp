@@ -39,14 +39,16 @@ void ChatRoom::connHandler(std::unique_ptr<Connection> &&conn) {
   spdlog::info("New connection from {}", conn->getAddr());
   auto &connTmp = writeUserMap(std::move(conn));
   auto addrIn = connTmp->getAddr();
-  try {
-    connTmp->recv();
-  } catch (badReceiving) {
-    return;
+  while (1) {
+    try {
+      connTmp->recv();
+    } catch (badReceiving) {
+      return;
+    }
+    spdlog::info("Start parsing msg {}",connTmp->getBuf());
+    int ret =
+        serverParser.parser(addrIn, connTmp->getBuf(), connTmp->getBufSize());
   }
-  spdlog::info("Start parsing");
-  int ret =
-      serverParser.parser(addrIn, connTmp->getBuf(), connTmp->getBufSize());
   return;
 }
 
@@ -97,27 +99,17 @@ int ChatRoom::toTarUser(std::string &addr,
 
 int ChatRoom::msgSend(const std::string &src, const std::string &dst, char *msg,
                       size_t msglen) {
-  //spdlog::info("C2C: Msg from {} to {}", src, dst);
+  // spdlog::info("C2C: Msg from {} to {}", src, dst);
   spdlog::info("Msg from {} to {}: \"{}\"", src, dst, msg);
   std::shared_lock<std::shared_mutex> lock(ioLock);
   if (!UserConns.contains(dst))
     // User does't exit
     return -1;
   auto &tarConn = UserConns[dst];
-  sockfd tarfd = tarConn->getSock();
-  if (tarfd < 0) {
-    spdlog::warn("Dup connection failed.");
-    return -1;
-  }
-  auto tarAddr = tarConn->getSockAddr();
+
   lock.unlock();
   //很明显send会阻塞，所以解除读写锁
-  Connection subConn(dup(tarfd), std::move(tarAddr));
-  try {
-    subConn.open();
-  } catch (badConnection) {
-    return -1;
-  }
+
   int connTimes = 0;
 Flag_send:
   if (connTimes > 0) {
@@ -132,7 +124,7 @@ Flag_send:
     }
   }
   try {
-    subConn.send(msg, msglen);
+    tarConn->send(msg, msglen);
   } catch (badSending) {
     connTimes++;
     goto Flag_send;
@@ -159,7 +151,7 @@ void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
     broadcastList.push_back(std::move(tmp));
   }
   lock.unlock();
-  std::vector<std::thread> broadcastThread(30);
+  std::vector<std::thread> broadcastThread;
   for (auto &Conn : broadcastList) {
     std::thread sendMsg([&Conn, msg, msglen, this]() {
       try {
@@ -191,6 +183,7 @@ void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
         goto Flag_send;
       }
     });
+    broadcastThread.emplace_back(std::move(sendMsg));
   }
   for (auto &i : broadcastThread) {
     i.join();

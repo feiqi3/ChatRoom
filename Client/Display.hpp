@@ -2,8 +2,11 @@
 #define DISPLAY_HPP
 
 #include "spdlog/spdlog.h"
+#include <iostream>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <ucontext.h>
 void onTTYChangeHandler(int);
 class Display {
 public:
@@ -17,7 +20,11 @@ protected:
   inline static float msgBoundRatio = .7;
 } inline display;
 
+void helpHandler();
+
 class ChatBubble {
+
+friend void helpHandler();
 
 public:
   friend Display;
@@ -29,6 +36,7 @@ public:
   bool loadFromFile;
 
 protected:
+  inline static std::mutex lock;
   inline static char buffer[2048];
   std::string msg;
   void genLeadingSpace();
@@ -50,10 +58,9 @@ public:
 class ServerBubble : public ChatBubble {
 public:
   ServerBubble(const std::string &str, const std::string &title);
-  void print() override;
 
-private:
-  const std::string title;
+  void print() override;
+  std::string title;
 };
 
 class InBubble : public ChatBubble {
@@ -61,22 +68,26 @@ public:
   InBubble(const std::string &str, const std::string &from);
   void print() override;
   std::string inAddr;
-
 };
 
 class BubbleFactory {
 public:
   friend std::shared_ptr<ChatBubble>;
   friend ChatBubble;
-  static auto bubbleMaker(const std::string &title,
+  friend ServerBubble;
+  static auto bubbleMaker(char tp,const std::string &title,
                           const std::string &timeStamp, const std::string &msg,
                           const std::string scr = "")
       -> std::shared_ptr<ChatBubble>;
 };
 
-class Interact{
-  //TODO: catch sigint and goto a Command line place 
-  //where to give command 
-  //and then jump to target
-};
+class Interact {
+
+public:
+  Interact();
+  static void commandLine();
+  static void showChat(const std::string &ip);
+  static void InteractiveParser(const std::string &str);
+  inline static ucontext_t contextCmd;
+} inline interact;
 #endif

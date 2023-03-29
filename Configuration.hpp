@@ -1,5 +1,7 @@
 #pragma once
+#include "spdlog/fmt/bundled/core.h"
 #include <memory>
+#include <iostream>
 #ifndef CONFIG
 #define CONFIG
 #include <arpa/inet.h>
@@ -27,7 +29,7 @@
 #include <thread>
 #include <unistd.h>
 
-#define SERVER_IP INADDR_ANY
+#define SERVER_IP "124.223.13.238"
 
 constexpr int MAX_THREAD = 128;
 constexpr ushort SERVER_PORT = 6666;
@@ -49,7 +51,7 @@ public:
         "Server", (spdlog::sinks_init_list){serverSink, fileSink}));
 #else
     spdlog::set_default_logger(
-        std::make_shared<spdlog::logger>("Server", fileSink));
+        std::make_shared<spdlog::logger>("Client", fileSink));
 #endif
 
     spdlog::flush_every(std::chrono::seconds(1));
@@ -63,5 +65,11 @@ public:
 private:
   inline static bool isInit = true;
 } inline spdlogConfig; // Register
+
+inline void wait4Enter(){
+  fmt::print("Press enter to go on.");
+  std::string in;
+  std::cin>>in;
+}
 
 #endif
