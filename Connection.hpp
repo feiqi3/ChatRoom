@@ -50,7 +50,7 @@ public:
 class badSending : public std::exception {
 public:
   badSending() = delete;
-  badSending(const std::string &_addr) : addr(_addr) {
+  badSending(std::string _addr) : addr(_addr) {
     spdlog::error("Failed to connect to target: {}\nResult: {}", addr,
                   strerror(errno));
   }
