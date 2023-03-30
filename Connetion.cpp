@@ -83,7 +83,7 @@ Connection::Connection(sockfd infd, sockaddr_in &&in, bool hasBuf)
 
 std::shared_ptr<Connection> Connection::accept(const Connection &listenConn) {
   sockaddr_in inSock;
-  socklen_t tmp;
+  socklen_t tmp = sizeof(struct sockaddr);
 Flag_accept:
   auto fdin = ::accept(listenConn.getSock(), (sockaddr *)&inSock, &tmp);
   if (fdin < 0) {

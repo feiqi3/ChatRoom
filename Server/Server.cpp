@@ -151,14 +151,17 @@ void ChatRoom::msgBroadcast(std::string &src, std::shared_ptr<char[]> msg,
   }
   lock.unlock();
   std::vector<std::thread> broadcastThread;
+
   for (auto Conn : broadcastList) {
-    std::thread sendMsg([&Conn, msg, msglen, this]() {
+    std::shared_ptr<Connection> tmpConn(Conn);
+    std::shared_ptr<char[]> tmpmsg(msg);
+    std::thread sendMsg([](std::shared_ptr<Connection>&& tmpConn,std::shared_ptr<char[]>&& tmpmsg,int msglen) {
       try {
-        Conn->send(msg, msglen);
+        tmpConn->send(tmpmsg, msglen);
       } catch (badSending) {
         return;
       }
-    });
+    },std::move(tmpConn),std::move(tmpmsg),msglen);
     sendMsg.detach();
   }
 

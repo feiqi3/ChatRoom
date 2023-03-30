@@ -41,7 +41,7 @@ public:
     char tok = mt.token;
     switch (tok) {
     case MsgToken::To: {
-      byte[0] = 0;
+      byte[0] = '0';
       break;
     }
     case MsgToken::From: {
