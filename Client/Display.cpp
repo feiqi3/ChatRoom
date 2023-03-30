@@ -14,6 +14,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <signal.h>
 #include <spdlog/fmt/bundled/color.h>
 #include <spdlog/fmt/chrono.h>
@@ -24,6 +25,10 @@
 #include <ucontext.h>
 #include <unistd.h>
 #include <utility>
+
+bool cmdMode = false;
+
+
 void Display::SetScrWidthAndMsgLen() {
   if (!isatty(STDOUT_FILENO)) {
     spdlog::critical("Please use programme in a Console!");
@@ -229,6 +234,7 @@ void sigQuitHandler(int) {
 
 void Interact::commandLine() {
   getcontext(&contextCmd);
+  cmdMode = true;
 #ifndef DEBUG
   system("clear");
 #endif
@@ -257,10 +263,13 @@ void Interact::InteractiveParser(const std::string &str) {
     fmt::print("\n\n");
     auto word = getWord(str, ii, isEnd);
     if (word == "help" || word == "Help") {
+      cmdMode = false;
+
       helpHandler();
     } else if (word == "clear") {
       system("clear");
     } else if (word == "cmb" || word == "Chamber") {
+      cmdMode = false;
       showChat("cmb");
     } else if (word == "chat" || word == "Chat") {
       auto ip = getWord(str, ii, isEnd);
@@ -270,6 +279,7 @@ void Interact::InteractiveParser(const std::string &str) {
         continue;
       }
       CurrentChatting = ip;
+      cmdMode = false;
       showChat(ip);
     } else if (word == "Send" || word == "send") {
       if (!chatRoomClient.hasUsr(CurrentChatting)) {
@@ -278,18 +288,21 @@ void Interact::InteractiveParser(const std::string &str) {
         continue;
       }
       auto msg = str.substr(5);
-      chatRoomClient.msgSend(str, CurrentChatting);
+      chatRoomClient.msgSend(str.substr(4), CurrentChatting);
       chatSL.save(CurrentChatting, msg, 'u', std::time(nullptr));
+      cmdMode = false;
       showChat(CurrentChatting);
     } else if (word == "user") {
       chatRoomClient.requestUserLists();
       fmt::print("User online now:\n");
+      std::shared_lock<std::shared_mutex> lock(chatRoomClient.iolock);
       for (auto &&i : chatRoomClient.usrs) {
-        if(i.first == "cmb"){
+        if (i.first == "cmb") {
           continue;
         }
         fmt::print("{} ", i.first);
       }
+      lock.unlock();
       fmt::print("\n");
     } else {
       ServerBubble("Unknown command.", "Client msg").print();
@@ -359,14 +372,16 @@ void Interact::showChat(const std::string &ip) {
 #endif // DEBUG
   {
 #ifndef DEBUG
-    system("clear");
+    // system("clear");
 #endif
     auto chatBubbles = chatSL.load(ip);
     CurrentChatting = ip;
     for (auto &&i : chatBubbles) {
       i->print();
     }
+#ifndef DEBUG
     c.second->wait(lock);
+#endif
   }
   setcontext(&Interact::contextCmd);
 }

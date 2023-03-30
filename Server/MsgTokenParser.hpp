@@ -1,4 +1,6 @@
 #pragma once
+#include "spdlog/fmt/bundled/core.h"
+#include <cstring>
 #include <memory>
 #ifndef MSGTOKEN
 #define MSGTOKEN
@@ -62,7 +64,7 @@ public:
 
     memset(byte.get() + 1, '\0', len - 1);
     memcpy(byte.get() + 2, mt.addr.c_str(), mt.addr.size());
-    memcpy(byte.get() + mt.addr.size() + 1, mt.msg.c_str(), mt.msg.size());
+    memcpy(byte.get() + mt.addr.size() + 2 + 1, mt.msg.c_str(), mt.msg.size());
     byte[1 + mt.addr.size() + 1] = ' ';
     byte[1] = ' ';
   }
@@ -88,13 +90,14 @@ public:
       //格式是： Broadcast srcIP msg
       MsgToken msgToken(MsgToken::Broadcast, msg, inAddr);
       MsgTokenByte tokenByte(msgToken);
-      chatRoom.msgBroadcast(inAddr, tokenByte.byte.get(), tokenByte.len);
+      chatRoom.msgBroadcast(inAddr, tokenByte.byte, tokenByte.len);
       return 1;
       //组装一个端对端信息
       //格式是 From scrIp msg
     } else if (token == '0') {
       int iplen;
       auto tar = getIp(in, iplen, len);
+      spdlog::info("tar IP: {}",tar);
       if (!chatRoom.isUserExist(tar)) {
         if (errorHandler(inAddr, tar, NO_TARGET_CLIENT_ERROR) < 0) {
           return -1;
@@ -108,7 +111,7 @@ public:
       //而源ip就是发送者
       auto token = MsgToken(MsgToken::From, msg, inAddr);
       auto msgbyte = MsgTokenByte(token);
-      int ret = chatRoom.msgSend(inAddr, tar, msgbyte.byte.get(), msgbyte.len);
+      int ret = chatRoom.msgSend(inAddr, tar, msgbyte.byte, msgbyte.len);
       if (ret == -1) {
         if (errorHandler(inAddr, tar, CLIENT_CLOSED_ERROR) < 0) {
           return -1;
@@ -147,7 +150,7 @@ private:
           flag = 1;
           break;
         }
-        ss<<" " << i->first << " ";
+        ss<<" "<< i->first << " ";
       }
       svec.push_back(ss.str());
       if (flag)
@@ -159,7 +162,7 @@ private:
       MsgToken msg((MsgToken::Token)'I', si, nullString);
       MsgTokenByte byte(msg);
       try {
-        chatRoom.msgSend(serverString, in, byte.byte.get(), byte.len);
+        chatRoom.msgSend(serverString, in, byte.byte, byte.len);
       } catch (badSending) {
         chatRoom.eraseUserMap(in);
         return -1;
@@ -169,7 +172,7 @@ private:
     MsgToken msg(MsgToken::Token('N'), "N", serverString);
     MsgTokenByte byte(msg);
     try {
-      chatRoom.msgSend(serverString, in, byte.byte.get(), byte.len);
+      chatRoom.msgSend(serverString, in, byte.byte, byte.len);
     } catch (badSending) {
       // Donothing
     }
@@ -185,6 +188,7 @@ private:
       }
     }
     char ip[20];
+    memset(ip, '\0', 20);
     memcpy(ip, in + 2, ipLen);
     std::string addr(ip);
     return addr;
@@ -199,7 +203,7 @@ private:
     //只有端对端才有
     MsgTokenByte msgErr(MsgToken(MsgToken::Note, errmsg, tar));
     try {
-      chatRoom.msgSend(tar, inAddr, msgErr.byte.get(), msgErr.len);
+      chatRoom.msgSend(tar, inAddr, msgErr.byte, msgErr.len);
     } catch (badSending) {
       return -1;
     }

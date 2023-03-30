@@ -16,7 +16,7 @@
 Connection::Connection(const std::string &addr, uint16_t port, bool hasBuf)
     : addrStr(addr), addr(genAddr(addr, port)), hasbuf(hasBuf) {
   if (hasBuf) {
-    buf = new char[bufSize];
+    buf = std::shared_ptr<char[]>(new char[bufSize]);
   }
   if ((conSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     printf("Socket setup error: %s\n", std::strerror(errno));
@@ -27,14 +27,14 @@ Connection::Connection(const std::string &addr, uint16_t port, bool hasBuf)
 Connection::Connection(in_addr_t inAddr, uint16_t port, bool hasBuf)
     : hasbuf(hasBuf) {
   if (hasBuf) {
-    buf = new char[bufSize];
+    buf = std::shared_ptr<char[]>(new char[bufSize]);
   }
   char ip[20];
   inet_ntop(AF_INET, &inAddr, ip, sizeof(inAddr));
   addrStr = std::string(ip);
   addr.sin_addr.s_addr = htonl(inAddr);
   addr.sin_family = AF_INET;
-  addr.sin_port =  htons(port);
+  addr.sin_port = htons(port);
 
   if ((conSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     spdlog::error("Socket setup error: {}\n", strerror(errno));
@@ -74,7 +74,7 @@ void Connection::bind() {
 Connection::Connection(sockfd infd, sockaddr_in &&in, bool hasBuf)
     : conSock(infd), addr(in), hasbuf(hasBuf) {
   if (hasBuf) {
-    buf = new char[bufSize];
+    buf = std::shared_ptr<char[]>(new char[bufSize]);
   }
   char ip[20];
   inet_ntop(AF_INET, &in, ip, sizeof(in));
@@ -123,11 +123,24 @@ void Connection::send(const char *buf, int len) {
   }
 }
 
+void Connection::send(const std::shared_ptr<char[]> buf, int len) {
+  // About MSG_NOSIGNAL
+  //如果遇到乐关闭的socket
+  // linux会发送一个SIGPIPE信号
+  //这个信号会关闭当前线程
+  spdlog::debug("Sending data in thread {}, target: {}", getpid(), getAddr());
+  if (::send(conSock, buf.get(), len, MSG_NOSIGNAL) >= 0) {
+    return;
+  } else {
+    throw badSending(addrStr);
+  }
+}
+
 void Connection::recv() {
   std::lock_guard<std::mutex> lock(_mutex);
-  memset(buf, '\0', bufSize);
+  memset(buf.get(), '\0', bufSize - 1);
   int ret;
-  if ((ret = ::recv(conSock, buf, bufSize - 1, MSG_NOSIGNAL)) > 0) {
+  if ((ret = ::recv(conSock, buf.get(), bufSize - 1, MSG_NOSIGNAL)) > 0) {
     return;
   }
   throw badReceiving(addrStr, ret);
@@ -135,8 +148,6 @@ void Connection::recv() {
 
 Connection::~Connection() {
   close(conSock);
-  if (hasbuf)
-    delete[] buf;
 }
 
 Connection::Connection(Connection &&conn)

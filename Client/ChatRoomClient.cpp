@@ -44,12 +44,12 @@ void ChatRoomClient::recHandler() {
   while (1) {
     try {
       conn->recv();
-      spdlog::info("Recv msg from server {}", conn->getBuf());
+      spdlog::info("Recv msg from server {}", conn->getBuf().get());
     } catch (badReceiving) {
       spdlog::critical("Receiving msg error");
       return;
     }
-    parserClient.recParser(conn->getBuf(), conn->getBufSize());
+    parserClient.recParser(conn->getBuf().get(), conn->getBufSize());
   }
 }
 
@@ -58,8 +58,8 @@ void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
   std::thread thread([msg, tarIp, this]() {
     try {
       MsgToken tk = tarIp == "cmb"
-                        ? MsgToken(MsgToken::Broadcast, msg, tarIp)
-                        : MsgToken(MsgToken::To, msg, nullString);
+                        ? MsgToken(MsgToken::Broadcast, msg, nullString)
+                        : MsgToken(MsgToken::To, msg, tarIp);
       MsgTokenByte byte(tk);
       this->conn->send(byte.byte, byte.len);
     } catch (badSending) {

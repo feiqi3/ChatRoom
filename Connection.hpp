@@ -61,7 +61,7 @@ public:
 class badReceiving : public std::exception {
 public:
   badReceiving() = delete;
-  badReceiving(const std::string &_addr, int retcode)
+  badReceiving(std::string _addr, int retcode)
       : retCode(retcode), addr(_addr) {}
   const std::string addr;
   const int retCode;
@@ -79,7 +79,7 @@ public:
   Connection(sockfd infd, sockaddr_in &&in, bool hasBuf = true);
   Connection(Connection &&conn);
   Connection() = delete;
-  inline char *getBuf() { return buf; }
+  inline std::shared_ptr<char[]> getBuf() { return buf; }
   inline int getBufSize() { return bufSize; }
 
   inline sockfd getSock() const { return conSock; }
@@ -90,6 +90,7 @@ public:
   void bind();
   void listen();
   void send(const char *buf, int len);
+  void send(const std::shared_ptr<char[]>buf, int len);
   void recv();
   inline static void setBacklog(int i) {
     if (i <= 0) {
@@ -107,7 +108,7 @@ public:
   ~Connection();
 
 protected:
-  char *buf;
+  std::shared_ptr<char[]> buf;
   sockfd conSock;
   sockaddr_in addr;
   std::string addrStr;

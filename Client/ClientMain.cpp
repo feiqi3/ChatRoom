@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "Display.hpp"
+
 int main() {
   spdlogConfig;
   chatRoomClient.GetInfoFromServer();

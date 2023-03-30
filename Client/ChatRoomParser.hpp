@@ -5,6 +5,7 @@
 #include "ChatSave.hpp"
 #include "Display.hpp"
 #include <condition_variable>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <mutex>
@@ -12,6 +13,9 @@
 #include <sstream>
 #include <string>
 #include <utility>
+
+extern bool cmdMode;
+
 static auto getWord(const std::string &in, uint &ii, bool &isEnd)
     -> std::string;
 
@@ -64,7 +68,7 @@ public:
     }
     default: {
       spdlog::error("Unexpected token.");
-      byte[0] = 3;
+      byte[0] = '3';
       msg = "Error msg.";
       break;
     }
@@ -97,12 +101,11 @@ public:
     auto ip = getIp(in, iplen, len);
     // 1. from client
     if (in[0] == '1') {
-
-      chatRoomClient.usrs[ip] = makeCVP();
+      if (!chatRoomClient.hasUsr(ip))
+        chatRoomClient.usrs[ip] = makeCVP();
       fromHandler(in, ip);
       // 2. Broadcast
     } else if (in[0] == '2') {
-      chatRoomClient.usrs[ip] = makeCVP();
       broadHandler(in, ip);
       // 3. System note
     } else if (in[0] == '3') {
@@ -138,10 +141,11 @@ private:
   void fromHandler(const std::string &msg, const std::string &ip) {
     // 接受从端对段来的信息
     std::string tarMsg = msg.substr(2 + ip.size());
-    if (ip != CurrentChatting) {
+
+    chatSL.save(ip, tarMsg, 't', std::time(nullptr));
+    if (ip != CurrentChatting || cmdMode == true) {
       ServerBubble("A new msg from " + ip, "Bing~").print();
     }
-    chatSL.save(ip, tarMsg, 't', std::time(nullptr));
   }
 
   void noteHandler(const std::string &msg, const std::string &ip) {
@@ -152,7 +156,7 @@ private:
   void broadHandler(const std::string &msg, const std::string &ip) {
     // 接受从广播来的信息
     std::string tarMsg = msg.substr(2 + ip.size());
-    chatSL.save(ip, tarMsg, 'e', std::time(nullptr));
+    chatSL.save(ip, tarMsg, 'B', std::time(nullptr));
   }
 
   inline std::string getIp(const char *in, int &ipLen, int len) {
@@ -164,6 +168,7 @@ private:
       }
     }
     char ip[20];
+    memset(ip, '\0', 20);
     memcpy(ip, in + 2, ipLen);
     std::string addr(ip);
     return addr;

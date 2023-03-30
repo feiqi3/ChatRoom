@@ -24,14 +24,14 @@ public:
   int toTarUser(std::string &addr, std::function<bool(Connection &tar)>);
 
   // When conn in, this function will do the rest of work
-  void connHandler(std::shared_ptr<Connection> &&);
-  int msgSend(const std::string &src,const std::string &dst, char *msg, size_t msglen);
-  void msgBroadcast(std::string &src, char *msg, size_t msglen);
+  void connHandler(std::shared_ptr<Connection> );
+  int msgSend(const std::string &src,const std::string &dst,std::shared_ptr<char[]> msg, size_t msglen);
+  void msgBroadcast(std::string &src,std::shared_ptr<char[]> , size_t msglen);
   std::unordered_map<std::string, std::shared_ptr<Connection>> UserConns;
   bool isUserExist(std::string &addr);
 
   mutable std::shared_mutex ioLock;
-  std::shared_ptr<Connection> &writeUserMap(std::shared_ptr<Connection> &&conn);
+  std::shared_ptr<Connection> writeUserMap(std::shared_ptr<Connection> conn);
   void eraseUserMap(const std::string &addr);
 
 

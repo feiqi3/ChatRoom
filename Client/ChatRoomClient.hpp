@@ -20,11 +20,11 @@
 //默认在大厅
 inline std::string CurrentChatting = "cmb";
 
-using CVP = std::pair<std::unique_ptr<std::mutex>,
-                      std::unique_ptr<std::condition_variable>>;
+using CVP = std::pair<std::shared_ptr<std::mutex>,
+                      std::shared_ptr<std::condition_variable>>;
 inline CVP makeCVP() {
-  return CVP(std::make_unique<std::mutex>(),
-             std::make_unique<std::condition_variable>());
+  return CVP(std::shared_ptr<std::mutex>(new std::mutex),
+             std::shared_ptr<std::condition_variable>(new std::condition_variable()));
 }
 class ParserClient;
 

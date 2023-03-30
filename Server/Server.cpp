@@ -3,6 +3,7 @@
 #include "spdlog/spdlog.h"
 #include <cerrno>
 #include <chrono>
+#include <exception>
 #include <memory>
 
 void ChatServer::run() {
@@ -29,35 +30,37 @@ void ChatServer::run() {
       spdlog::critical("Accept error, Critical error, program terminated.");
       exit(0);
     }
-    chatRoom.connHandler(std::move(inConn));
-    // std::thread(&ChatRoom::connHandler, &chatRoom, std::move(inConn));
+    // chatRoom.connHandler(std::move(inConn));
+    std::thread newThread(&ChatRoom::connHandler, &chatRoom, std::move(inConn));
+    newThread.detach();
   }
 }
 
-void ChatRoom::connHandler(std::shared_ptr<Connection> &&conn) {
+void ChatRoom::connHandler(std::shared_ptr<Connection> conn) {
   // recv -> code == 0 , connection closed
   // code < 0 : error
   spdlog::info("New connection from {}", conn->getAddr());
-  auto &connTmp = writeUserMap(std::move(conn));
+  auto connTmp = writeUserMap(conn);
   auto addrIn = connTmp->getAddr();
   while (1) {
     try {
       connTmp->recv();
     } catch (badReceiving) {
+      chatRoom.eraseUserMap(conn->getAddr());
       return;
     }
-    spdlog::info("Start parsing msg {}",connTmp->getBuf());
+    spdlog::info("Start parsing msg {}", connTmp->getBuf().get());
     int ret =
-        serverParser.parser(addrIn, connTmp->getBuf(), connTmp->getBufSize());
+        serverParser.parser(addrIn, connTmp->getBuf().get(), connTmp->getBufSize());
   }
   return;
 }
 
-std::shared_ptr<Connection> &
-ChatRoom::writeUserMap(std::shared_ptr<Connection> &&conn) {
+std::shared_ptr<Connection>
+ChatRoom::writeUserMap(std::shared_ptr<Connection> conn) {
   std::string addr = conn->getAddr();
   std::unique_lock<std::shared_mutex> lock(ioLock);
-  return (UserConns[addr] = std::move(conn));
+  return (UserConns[addr] = conn);
 }
 
 void ChatRoom::eraseUserMap(const std::string &addr) {
@@ -98,10 +101,10 @@ int ChatRoom::toTarUser(std::string &addr,
   // 1 operation succeed
 }
 
-int ChatRoom::msgSend(const std::string &src, const std::string &dst, char *msg,
-                      size_t msglen) {
+int ChatRoom::msgSend(const std::string &src, const std::string &dst,
+                      std::shared_ptr<char[]> msg, size_t msglen) {
   // spdlog::info("C2C: Msg from {} to {}", src, dst);
-  spdlog::info("Msg from {} to {}: \"{}\"", src, dst, msg);
+  spdlog::info("Msg from {} to {}: \"{}\"", src, dst, msg.get());
   std::shared_lock<std::shared_mutex> lock(ioLock);
   if (!UserConns.contains(dst))
     // User does't exit
@@ -133,9 +136,10 @@ Flag_send:
   return 1;
 }
 
-void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
+void ChatRoom::msgBroadcast(std::string &src, std::shared_ptr<char[]> msg,
+                            size_t msglen) {
 
-  spdlog::info("Broadcast: Msg from {} to all: {}", src, msg);
+  spdlog::info("Broadcast: Msg from {} to all: {}", src, msg.get());
   std::vector<std::shared_ptr<Connection>> broadcastList;
   std::shared_lock<std::shared_mutex> lock(ioLock);
   for (auto &i : this->UserConns) {
@@ -147,42 +151,17 @@ void ChatRoom::msgBroadcast(std::string &src, char *msg, size_t msglen) {
   }
   lock.unlock();
   std::vector<std::thread> broadcastThread;
-  for (auto &Conn : broadcastList) {
+  for (auto Conn : broadcastList) {
     std::thread sendMsg([&Conn, msg, msglen, this]() {
-      try {
-        Conn->open();
-      } catch (badConnection) {
-        auto tmp_addr = Conn->getAddr();
-        eraseUserMap(tmp_addr);
-        spdlog::info("Failed to connect to {}, connection closed.", tmp_addr);
-        return;
-      }
-      int connTimes = 0;
-    Flag_send:
-      auto addrStr = Conn->getAddr();
-
-      if (connTimes > 0) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        spdlog::debug("Send message to {} error, have retryed for {} times.",
-                      addrStr, connTimes);
-        if (connTimes > 3) {
-          spdlog::info("Failed to connect to {}, connection closed.", addrStr);
-          chatRoom.eraseUserMap(addrStr);
-          return;
-        }
-      }
       try {
         Conn->send(msg, msglen);
       } catch (badSending) {
-        connTimes++;
-        goto Flag_send;
+        return;
       }
     });
-    broadcastThread.emplace_back(std::move(sendMsg));
+    sendMsg.detach();
   }
-  for (auto &i : broadcastThread) {
-    i.join();
-  }
+
   spdlog::trace("Broadcast from {} finished.", src);
   return;
 }

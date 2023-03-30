@@ -12,6 +12,10 @@
 
 void ChatSL::save(const std::string &addr, std::string msg, char type,
                   std::time_t timeStamp, const std::string &title) {
+  if(!chatRoomClient.hasUsr(addr)){
+    spdlog::error("No such file exit.");
+    return;
+  }
   auto& c = chatRoomClient.usrs[addr];
   //std::unique_lock<std::mutex> lock(*c.first.get());
   std::fstream file("chatSave/" + addr,
