@@ -34,10 +34,8 @@ public:
 class MsgTokenByte {
 public:
   MsgTokenByte(const MsgToken &mt)
-      : len(mt.token != 2 ? 2 + 20 + mt.msg.size() : 2 + mt.msg.size()),
-        byte(std::shared_ptr<char[]>(
-            new char[mt.token != 2 ? 2 + 20 + mt.msg.size()
-                                   : 2 + mt.msg.size()])) {
+      : len(2 + 20 + mt.msg.size()),
+        byte(std::shared_ptr<char[]>(new char[2 + 21 + mt.msg.size()])) {
     char tok = mt.token;
     switch (tok) {
     case MsgToken::To: {
@@ -97,7 +95,7 @@ public:
     } else if (token == '0') {
       int iplen;
       auto tar = getIp(in, iplen, len);
-      spdlog::info("tar IP: {}",tar);
+      spdlog::info("tar IP: {}", tar);
       if (!chatRoom.isUserExist(tar)) {
         if (errorHandler(inAddr, tar, NO_TARGET_CLIENT_ERROR) < 0) {
           return -1;
@@ -150,7 +148,7 @@ private:
           flag = 1;
           break;
         }
-        ss<<" "<< i->first << " ";
+        ss << " " << i->first << " ";
       }
       svec.push_back(ss.str());
       if (flag)
