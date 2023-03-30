@@ -4,10 +4,12 @@
 #include "ChatRoomClient.hpp"
 #include "ChatSave.hpp"
 #include "Display.hpp"
+#include "spdlog/fmt/bundled/core.h"
 #include <condition_variable>
 #include <cstring>
 #include <ctime>
 #include <fstream>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <sstream>
@@ -96,20 +98,20 @@ public:
 
 class ParserClient {
 public:
-  void recParser(const char *in, int len) {
+  void recParser(std::shared_ptr<char[]> in, int len) {
     int iplen;
     auto ip = getIp(in, iplen, len);
     // 1. from client
     if (in[0] == '1') {
       if (!chatRoomClient.hasUsr(ip))
         chatRoomClient.usrs[ip] = makeCVP();
-      fromHandler(in, ip);
+      fromHandler(in.get(), ip);
       // 2. Broadcast
     } else if (in[0] == '2') {
-      broadHandler(in, ip);
+      broadHandler(in.get(), ip);
       // 3. System note
     } else if (in[0] == '3') {
-      noteHandler(in, ip);
+      noteHandler(in.get(), ip);
     } else if (in[0] == 'I') {
       if (!chatRoomClient.usrListChange) {
         chatRoomClient.usrs.clear();
@@ -118,7 +120,7 @@ public:
 
         chatRoomClient.usrListChange = true;
       }
-      getUserHandler(in);
+      getUserHandler(in.get());
     } else if (in[0] == 'N') {
       ServerBubble("User list has been updated.", "From client.").print();
       chatRoomClient.usrListChange = false;
@@ -159,17 +161,19 @@ private:
     chatSL.save(ip, tarMsg, 'B', std::time(nullptr));
   }
 
-  inline std::string getIp(const char *in, int &ipLen, int len) {
+  inline std::string getIp(std::shared_ptr<char[]> in, int &ipLen, int len) {
     for (ipLen = 0; ipLen < len - 3;) {
       if (in[ipLen + 2] != ' ') {
+        fmt::print("{}", in[ipLen + 2]);
         ++ipLen;
       } else {
         break;
       }
     }
+    
     char ip[20];
     memset(ip, '\0', 20);
-    memcpy(ip, in + 2, ipLen);
+    memcpy(ip, in.get() + 2, ipLen);
     std::string addr(ip);
     return addr;
   }

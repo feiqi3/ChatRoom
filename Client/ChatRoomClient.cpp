@@ -49,7 +49,7 @@ void ChatRoomClient::recHandler() {
       spdlog::critical("Receiving msg error");
       return;
     }
-    parserClient.recParser(conn->getBuf().get(), conn->getBufSize());
+    parserClient.recParser(conn->getBuf(), conn->getBufSize());
   }
 }
 
