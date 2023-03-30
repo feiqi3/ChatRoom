@@ -28,7 +28,6 @@
 
 bool cmdMode = false;
 
-
 void Display::SetScrWidthAndMsgLen() {
   if (!isatty(STDOUT_FILENO)) {
     spdlog::critical("Please use programme in a Console!");
@@ -212,6 +211,15 @@ auto BubbleFactory::bubbleMaker(char tp, const std::string &title,
     ret->timeStamp = timeStamp;
     ret->loadFromFile = true;
     ret->title = title.substr(1);
+    return ret;
+    break;
+  }
+  //From cmb broadcast
+  case 'e': {
+    auto ret = std::make_shared<InBubble>(msg, "");
+    ret->timeStamp = timeStamp;
+    ret->loadFromFile = true;
+    ret->inAddr = title;
     return ret;
     break;
   }

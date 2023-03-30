@@ -113,14 +113,18 @@ public:
     } else if (in[0] == '3') {
       noteHandler(in.get(), ip);
     } else if (in[0] == 'I') {
+      //从服务器接受用户名单
       if (!chatRoomClient.usrListChange) {
+        //锁！锁！锁！
+        std::unique_lock<std::shared_mutex> lock(chatRoomClient.iolock);
         chatRoomClient.usrs.clear();
         chatRoomClient.usrs["cmb"] = makeCVP();
         chatRoomClient.usrs[serverString] = makeCVP();
-
+        lock.unlock();
         chatRoomClient.usrListChange = true;
       }
       getUserHandler(in.get());
+      //N代表名单接受结束
     } else if (in[0] == 'N') {
       ServerBubble("User list has been updated.", "From client.").print();
       chatRoomClient.usrListChange = false;
@@ -158,19 +162,29 @@ private:
   void broadHandler(const std::string &msg, const std::string &ip) {
     // 接受从广播来的信息
     std::string tarMsg = msg.substr(2 + ip.size());
-    chatSL.save(ip, tarMsg, 'B', std::time(nullptr));
+    if (CurrentChatting != "cmb" || cmdMode == true) {
+      ServerBubble("A new msg from cmb", "Bing~").print();
+    }
+    chatSL.save("cmb", tarMsg, 'e', std::time(nullptr),ip);
+  }
+
+  static inline bool isIpchar(char c){
+    if(c == '.' || (c <= '9' && c >= '0')){
+      return true;
+    }
+    return false;
   }
 
   inline std::string getIp(std::shared_ptr<char[]> in, int &ipLen, int len) {
     for (ipLen = 0; ipLen < len - 3;) {
-      if (in[ipLen + 2] != ' ') {
-        fmt::print("{}", in[ipLen + 2]);
+      char cc = in[ipLen + 2];
+      if (isIpchar(cc)) {
+        fmt::print("{}\n", in[ipLen + 2]);
         ++ipLen;
       } else {
         break;
       }
     }
-    
     char ip[20];
     memset(ip, '\0', 20);
     memcpy(ip, in.get() + 2, ipLen);

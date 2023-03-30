@@ -14,8 +14,10 @@ public:
 
   void save(const std::string &addr, std::string msg, char type,
             std::time_t timeStamp,const std::string& title = "");
+  
   auto load(const std::string &addr)
       -> std::vector<std::shared_ptr<ChatBubble>>;
+  
   protected:
   std::shared_mutex iolock;
   
