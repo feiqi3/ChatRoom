@@ -53,7 +53,6 @@ public:
     spdlog::set_default_logger(
         std::make_shared<spdlog::logger>("Client", fileSink));
 #endif
-
     spdlog::flush_every(std::chrono::seconds(1));
     spdlog::set_level(spdlog::level::trace);
 #ifdef PROD
@@ -63,7 +62,7 @@ public:
   }
 
 private:
-  inline static bool isInit = true;
+  inline static bool isInit = false;
 } inline spdlogConfig; // Register
 
 inline void wait4Enter(){
