@@ -5,6 +5,7 @@
 #include "spdlog/fmt/bundled/chrono.h"
 #include "spdlog/fmt/bundled/core.h"
 #include "spdlog/spdlog.h"
+#include <atomic>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -27,6 +28,7 @@
 #include <utility>
 
 bool cmdMode = false;
+std::atomic_bool canJump = false;
 
 void Display::SetScrWidthAndMsgLen() {
   if (!isatty(STDOUT_FILENO)) {
@@ -236,8 +238,10 @@ auto BubbleFactory::bubbleMaker(char tp, const std::string &title,
 }
 
 void sigQuitHandler(int) {
-  fmt::print("\b\b");
-  setcontext(&Interact::contextCmd);
+  if (canJump) {
+    fmt::print("\b\b");
+    setcontext(&Interact::contextCmd);
+  }
 }
 
 void Interact::commandLine() {
@@ -375,11 +379,13 @@ void Interact::showChat(const std::string &ip) {
   // boost里有个可以分段加载文件的库，换成那个，每次只加载最后几条消息，性能可以高很多
   // TODO: 实现增量加载
   auto &c = chatRoomClient.usrs[ip];
+  fmt::print("In to chat\n");
   std::unique_lock<std::mutex> lock(*c.first);
 #ifndef DEBUG
   while (1)
 #endif // DEBUG
   {
+    canJump = false;
 #ifndef DEBUG
     system("clear");
 #endif
@@ -388,8 +394,11 @@ void Interact::showChat(const std::string &ip) {
     for (auto &&i : chatBubbles) {
       i->print();
     }
+    canJump = true;
 #ifndef DEBUG
     c.second->wait(lock);
+#else
+    lock.unlock();
 #endif
   }
 #ifdef DEBUG

@@ -2,11 +2,16 @@
 #define DISPLAY_HPP
 
 #include "spdlog/spdlog.h"
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <ucontext.h>
+
+//在上锁后立即setcontext会导致死锁 
+extern std::atomic_bool canJump;
+
 void onTTYChangeHandler(int);
 class Display {
 public:

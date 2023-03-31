@@ -25,7 +25,7 @@ void ChatSL::save(const std::string &addr, std::string msg, char type,
       fmt::format("{:%Y-%m-%d %H:%M:%S}", fmt::localtime(timeStamp));
   spdlog::info("Save msg from {}, title {}, content {}", addr, title, msg);
   //公告为B //广播为e
-  if (type == 'B'||type=='e') {
+  if (type == 'B' || type == 'e') {
     //"B"+"IP"
     //"e"+"IP"
     file << type << title << "\n";
@@ -35,7 +35,9 @@ void ChatSL::save(const std::string &addr, std::string msg, char type,
   spdlog::info("{}", msg);
   file << fmtTime << "\n";
   file << msg << std::endl;
-  c.second->notify_all();
+  //不为自己
+  if (type != 'u')
+    c.second->notify_one();
 }
 
 auto ChatSL::load(const std::string &addr)
