@@ -54,13 +54,8 @@ void ChatRoomClient::recHandler() {
       spdlog::info("Recv msg from server {}", conn->getBuf().get());
     } catch (badReceiving) {
       spdlog::critical("Receiving msg error");
-      spdlog::critical("Failed to connect to Server.programme out.");
-      fmt::print("Cannot connect to Server, enter Y to retry.");
-      if (getchar() == 'Y') {
-        setcontext(&reTry);
-      } else {
-        return;
-      }
+      spdlog::critical("Failed to connect to Server. Programme out.");
+      std::terminate();
     }
     parserClient.recParser(conn->getBuf(), conn->getBufSize());
   }
@@ -77,8 +72,6 @@ void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
       this->conn->send(byte.byte, byte.len);
     } catch (badSending) {
       chatSL.save(tarIp, msg, 'B', std::time(nullptr), "Network error");
-      fmt::print(
-          "You can print 'Retry' in Command mode to reconnect to Server.");
       wait4Enter();
       setcontext(&Interact::contextCmd);
     }

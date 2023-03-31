@@ -285,7 +285,6 @@ void Interact::InteractiveParser(const std::string &str) {
     } else if (word == "chat" || word == "Chat") {
       auto ip = getWord(str, ii, isEnd);
       if (!chatRoomClient.hasUsr(ip)) {
-        fmt::print("\n");
         ServerBubble("No target user", "Ip error").print();
         continue;
       }
@@ -294,7 +293,6 @@ void Interact::InteractiveParser(const std::string &str) {
       showChat(ip);
     } else if (word == "Send" || word == "send") {
       if (!chatRoomClient.hasUsr(CurrentChatting)) {
-        fmt::print("\n");
         ServerBubble("No target user", "Ip error").print();
         continue;
       }
@@ -312,13 +310,13 @@ void Interact::InteractiveParser(const std::string &str) {
       fmt::print("User online now:\n");
       std::shared_lock<std::shared_mutex> lock(chatRoomClient.iolock);
       for (auto &&i : *chatRoomClient.usrs) {
-        if (i.first == "cmb") {
+        if (i.first == "cmb"||i.first =="server") {
           continue;
         }
         fmt::print("{} ", i.first);
       }
       lock.unlock();
-      fmt::print("\n");
+      fmt::print("\nYou can chat with them.");
     } else if (word == "back") {
       showChat(CurrentChatting);
     } else {
@@ -345,6 +343,7 @@ void helpHandler() {
   fmt::print("Enter \'Send $WHAT YOU WANT TO SAY$\', the massage will send to "
              "your last chat.\n");
   fmt::print("enter \'user\' to see who is online now.");
+  fmt::print("enter \'back\' to back to chat room.");
   fmt::print("Now, goto command mode.");
   wait4Enter();
   setcontext(&Interact::contextCmd);
@@ -383,7 +382,6 @@ void Interact::showChat(const std::string &ip) {
   // boost里有个可以分段加载文件的库，换成那个，每次只加载最后几条消息，性能可以高很多
   // TODO: 实现增量加载
   auto c = (*chatRoomClient.usrs)[ip];
-  fmt::print("In to chat\n");
   std::unique_lock<std::mutex> lock(*c.first);
 #ifndef DEBUG
   while (1)

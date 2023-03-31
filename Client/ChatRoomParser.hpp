@@ -183,7 +183,6 @@ private:
     for (ipLen = 0; ipLen < len - 3;) {
       char cc = in[ipLen + 2];
       if (isIpchar(cc)) {
-        fmt::print("{}\n", in[ipLen + 2]);
         ++ipLen;
       } else {
         break;
