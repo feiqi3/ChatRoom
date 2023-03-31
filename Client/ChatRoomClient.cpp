@@ -5,6 +5,7 @@
 #include "spdlog/fmt/bundled/core.h"
 #include "spdlog/spdlog.h"
 #include <condition_variable>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <exception>
@@ -15,6 +16,8 @@
 #include <ucontext.h>
 #include <unistd.h>
 #include <utility>
+extern ucontext_t reTry;
+
 void ChatRoomClient::GetInfoFromServer() {
   try {
 
@@ -22,7 +25,12 @@ void ChatRoomClient::GetInfoFromServer() {
 
   } catch (badConnection) {
     spdlog::critical("Failed to connect to Server.programme out.");
-    std::terminate();
+    fmt::print("Cannot connect to Server, enter Y to retry.");
+    if (getchar() == 'Y') {
+      setcontext(&reTry);
+    }else{
+      std::terminate();
+    }
   }
   recThread = std::thread(&ChatRoomClient::recHandler, this);
   recThread.detach();
@@ -47,7 +55,14 @@ void ChatRoomClient::recHandler() {
       spdlog::info("Recv msg from server {}", conn->getBuf().get());
     } catch (badReceiving) {
       spdlog::critical("Receiving msg error");
-      return;
+      spdlog::critical("Failed to connect to Server.programme out.");
+      fmt::print("Cannot connect to Server, enter Y to retry.");
+      if (getchar() == 'Y') {
+        setcontext(&reTry);
+      } else {
+
+        return;
+      }
     }
     parserClient.recParser(conn->getBuf(), conn->getBufSize());
   }
