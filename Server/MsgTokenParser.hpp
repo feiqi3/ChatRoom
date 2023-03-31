@@ -1,7 +1,10 @@
 #pragma once
 #include "spdlog/fmt/bundled/core.h"
+#include <chrono>
 #include <cstring>
 #include <memory>
+#include <thread>
+#include <vector>
 #ifndef MSGTOKEN
 #define MSGTOKEN
 #include "Server.hpp"
@@ -145,6 +148,8 @@ private:
       int len = 0;
       for (; len < 1400; ++i, len += 20) {
         if (i == chatRoom.UserConns.end()) {
+          //在IP list结束后加上N
+          ss<<"N";
           flag = 1;
           break;
         }
@@ -156,6 +161,9 @@ private:
     }
     lock.unlock();
     //发送IP
+    int indexOfip = 0;
+    int ipSize = svec.size();
+    std::vector<std::string> ereaseList;
     for (auto &&si : svec) {
       MsgToken msg((MsgToken::Token)'I', si, nullString);
       MsgTokenByte byte(msg);
@@ -167,13 +175,14 @@ private:
       }
     }
     // end token
-    MsgToken msg(MsgToken::Token('N'), "N", serverString);
-    MsgTokenByte byte(msg);
-    try {
+    /* std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    MsgToken msg(MsgToken::Token('N'), "N", serverString); */
+    //MsgTokenByte byte(msg);
+/*     try {
       chatRoom.msgSend(serverString, in, byte.byte, byte.len);
     } catch (badSending) {
       // Donothing
-    }
+    } */
     return 1;
   }
 

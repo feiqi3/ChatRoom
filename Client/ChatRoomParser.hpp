@@ -124,7 +124,7 @@ public:
         chatRoomClient.usrListChange = true;
       }
       getUserHandler(in.get());
-      //N代表名单接受结束
+      // N代表名单接受结束
     } else if (in[0] == 'N') {
       ServerBubble("User list has been updated.", "From client.").print();
       chatRoomClient.usrListChange = false;
@@ -139,6 +139,10 @@ private:
     std::string Server = getWord(msg, ii, isEnd);
     while (!isEnd) {
       std::string ip = getWord(msg, ii, isEnd);
+      if (ip == "N") {
+        chatRoomClient.usrListChange = false;
+        return;
+      }
       chatRoomClient.usrs[ip] = makeCVP();
     }
     return;
@@ -165,11 +169,11 @@ private:
     if (CurrentChatting != "cmb" || cmdMode == true) {
       ServerBubble("A new msg from cmb", "Bing~").print();
     }
-    chatSL.save("cmb", tarMsg, 'e', std::time(nullptr),ip);
+    chatSL.save("cmb", tarMsg, 'e', std::time(nullptr), ip);
   }
 
-  static inline bool isIpchar(char c){
-    if(c == '.' || (c <= '9' && c >= '0')){
+  static inline bool isIpchar(char c) {
+    if (c == '.' || (c <= '9' && c >= '0')) {
       return true;
     }
     return false;
