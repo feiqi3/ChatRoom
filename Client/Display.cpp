@@ -214,7 +214,7 @@ auto BubbleFactory::bubbleMaker(char tp, const std::string &title,
     return ret;
     break;
   }
-  //From cmb broadcast
+  // From cmb broadcast
   case 'e': {
     auto ret = std::make_shared<InBubble>(msg, "");
     ret->timeStamp = timeStamp;
@@ -272,7 +272,6 @@ void Interact::InteractiveParser(const std::string &str) {
     auto word = getWord(str, ii, isEnd);
     if (word == "help" || word == "Help") {
       cmdMode = false;
-
       helpHandler();
     } else if (word == "clear") {
       system("clear");
@@ -312,6 +311,8 @@ void Interact::InteractiveParser(const std::string &str) {
       }
       lock.unlock();
       fmt::print("\n");
+    } else if (word == "back") {
+      showChat(CurrentChatting);
     } else {
       ServerBubble("Unknown command.", "Client msg").print();
     }
@@ -327,16 +328,16 @@ void helpHandler() {
              "│{3: ^{2}}│\n"
              "└{0:─^{2}}┘\n",
              "", "Manual4ChatRoom ", Display::msgBoundLen, "made by feiqi3");
-  fmt::print("If U want to chat with someone, just enter \'To $ target ip $\' "
-             "then follow by "
-             "that guy's IP  ");
+  fmt::print("First of all, use key \'Ctrl+\\\' to reach command mode where "
+             "the command followed should be entered.\n ");
+  fmt::print("Enter \'chat $target ip$\' to open a chat.\n ");
 
-  fmt::print("For example: \"To 192.169.1.1\"\n"
-             "Then U can reach to your own chatRoom.\n  Press Ctrl+\\ to ");
-  fmt::print("go into command mode, where U can send msg\n"
-             "enter 'Send $ the words you want to say $' \n\n");
-  fmt::print("If U need to visit online group room, Just enter \'Chamber\' or "
-             "\'cmb\' for short\n");
+  fmt::print("For example: \"Chat 192.169.1.1\"\n");
+  fmt::print("enter \'cmb\' to go to group chat.\n");
+  fmt::print("Enter \'Send $WHAT YOU WANT TO SAY$\', the massage will send to "
+             "your last chat.\n");
+  fmt::print("enter \'user\' to see who is online now.");
+  fmt::print("Now, goto command mode.");
   wait4Enter();
   setcontext(&Interact::contextCmd);
   return;
@@ -380,7 +381,7 @@ void Interact::showChat(const std::string &ip) {
 #endif // DEBUG
   {
 #ifndef DEBUG
-    // system("clear");
+    system("clear");
 #endif
     auto chatBubbles = chatSL.load(ip);
     CurrentChatting = ip;
@@ -391,7 +392,9 @@ void Interact::showChat(const std::string &ip) {
     c.second->wait(lock);
 #endif
   }
+#ifdef DEBUG
   setcontext(&Interact::contextCmd);
+#endif
 }
 
 Interact::Interact() { signal(SIGQUIT, sigQuitHandler); }

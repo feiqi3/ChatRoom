@@ -136,7 +136,6 @@ private:
     std::unique_lock<std::shared_mutex> lock(chatRoomClient.iolock);
     bool isEnd = false;
     uint ii = 1;
-    std::string Server = getWord(msg, ii, isEnd);
     while (!isEnd) {
       std::string ip = getWord(msg, ii, isEnd);
       if (ip == "N") {
@@ -202,12 +201,15 @@ static auto getWord(const std::string &in, uint &ii, bool &isEnd)
     -> std::string {
   int ss = in.size();
   std::stringstream ssm;
+  bool flag = false;
   for (; ii < ss; ++ii) {
     if (in[ii] != ' ') {
+      flag = true;
       ssm << in[ii];
     } else {
-      ++ii;
-      break;
+      if (flag)
+        break;
+      continue;
     }
   }
   if (ii >= ss) {

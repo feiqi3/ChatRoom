@@ -34,20 +34,20 @@ void ChatRoomClient::GetInfoFromServer() {
   }
   recThread = std::thread(&ChatRoomClient::recHandler, this);
   recThread.detach();
-}
-
+}  
+  
 void ChatRoomClient::requestUserLists() { conn->send((char *)"3 I", 3); }
-
+  
 void ChatRoomClient::establishConn() {
   auto rcv = std::make_unique<Connection>(SERVER_IP, SERVER_PORT, true);
   rcv->open();
   this->conn = std::move(rcv);
-}
+} 
 bool ChatRoomClient::hasUsr(std::string ip) {
   std::shared_lock<std::shared_mutex> lock(iolock);
   return usrs.find(ip) != usrs.end();
 }
-
+  
 void ChatRoomClient::recHandler() {
   while (1) {
     try {
@@ -60,16 +60,15 @@ void ChatRoomClient::recHandler() {
       if (getchar() == 'Y') {
         setcontext(&reTry);
       } else {
-
         return;
       }
     }
     parserClient.recParser(conn->getBuf(), conn->getBufSize());
   }
-}
-
+}  
+  
 void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
-
+  
   std::thread thread([msg, tarIp, this]() {
     try {
       MsgToken tk = tarIp == "cmb"
@@ -86,6 +85,6 @@ void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
     }
   });
   thread.join();
-}
-
+} 
+  
 ChatRoomClient::ChatRoomClient() { usrs["cmb"] = std::move(makeCVP()); }
