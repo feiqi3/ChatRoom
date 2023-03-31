@@ -1,7 +1,7 @@
 # ChatRoom
 ## Introduction   
 
-This my OS final project, written by C++ and runing in unix(Only tested on ubuntu22.04)      
+This my OS final project, written by C++ and running in unix(Only tested on ubuntu22.04)      
 
 这是我的OS课程设计，运行在Unix命令行上的聊天软件    
 使用了许多C++17特性（<small>*和非常多C++98的封建余孽*</small>     
@@ -17,13 +17,13 @@ make -j
 
 #运行服务端    
 ```shell  
-cd Server     
+cd build/Server     
 ./ChatRoomOnlineServer   
 ```    
 
 #运行客户端  
 ```shell   
-cd Client       
+cd build/Client       
 ./ChatRoomOnlineClient    
 ```    
 
