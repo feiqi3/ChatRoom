@@ -5,7 +5,9 @@ This my OS final project, written by C++ and running in unix(Only tested on ubun
 
 这是我的OS课程设计，运行在Unix命令行上的聊天软件    
 使用了许多C++17特性（<small>*和非常多C++98的封建余孽*</small>     
-实现非常不优雅，Bug成千上万      
+实现非常不优雅，充满了并发问题死锁和各种奇奇怪怪的寄点      
+（第一次写网络程序, 第一次用Socket QWQ      
+
 支持一对一聊天和群组聊天（所有人在一个群里的那种）     
 
 运行方法:   
@@ -38,5 +40,7 @@ constexpr ushort SERVER_PORT = 6666;   *改成自己的服务器端口*
 客户端如果运行在bash或者某些系统自带的shell上显示可能有点问题    
 解决方法是下一个现代的shell-like zsh      
 或者去display.cpp里改代码，把某些代码中的fmt::print中的颜色参数改了      
+
+That's all.    
 
  
