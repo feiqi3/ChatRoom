@@ -298,6 +298,10 @@ void Interact::InteractiveParser(const std::string &str) {
         ServerBubble("No target user", "Ip error").print();
         continue;
       }
+      if (str.size() < 5) {
+        ServerBubble("Send what?", "Client msg").print();
+        continue;
+      }
       auto msg = str.substr(5);
       chatRoomClient.msgSend(str.substr(4), CurrentChatting);
       chatSL.save(CurrentChatting, msg, 'u', std::time(nullptr));
@@ -307,7 +311,7 @@ void Interact::InteractiveParser(const std::string &str) {
       chatRoomClient.requestUserLists();
       fmt::print("User online now:\n");
       std::shared_lock<std::shared_mutex> lock(chatRoomClient.iolock);
-      for (auto &&i : chatRoomClient.usrs) {
+      for (auto &&i : *chatRoomClient.usrs) {
         if (i.first == "cmb") {
           continue;
         }
@@ -378,7 +382,7 @@ void Interact::showChat(const std::string &ip) {
   // TODO:
   // boost里有个可以分段加载文件的库，换成那个，每次只加载最后几条消息，性能可以高很多
   // TODO: 实现增量加载
-  auto &c = chatRoomClient.usrs[ip];
+  auto c = (*chatRoomClient.usrs)[ip];
   fmt::print("In to chat\n");
   std::unique_lock<std::mutex> lock(*c.first);
 #ifndef DEBUG

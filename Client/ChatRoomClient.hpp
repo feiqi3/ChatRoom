@@ -46,7 +46,7 @@ protected:
   std::unique_ptr<Connection> conn;
   // Has excetpion
   void establishConn();
-  std::unordered_map<std::string, CVP> usrs;
+  std::shared_ptr<std::unordered_map<std::string, CVP>> usrs;
 } inline chatRoomClient;
 
 #endif

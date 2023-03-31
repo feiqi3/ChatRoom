@@ -20,7 +20,6 @@ extern ucontext_t reTry;
 
 void ChatRoomClient::GetInfoFromServer() {
   try {
-
     establishConn(); // Catch
 
   } catch (badConnection) {
@@ -28,26 +27,26 @@ void ChatRoomClient::GetInfoFromServer() {
     fmt::print("Cannot connect to Server, enter Y to retry.");
     if (getchar() == 'Y') {
       setcontext(&reTry);
-    }else{
+    } else {
       std::terminate();
     }
   }
   recThread = std::thread(&ChatRoomClient::recHandler, this);
   recThread.detach();
-}  
-  
+}
+
 void ChatRoomClient::requestUserLists() { conn->send((char *)"3 I", 3); }
-  
+
 void ChatRoomClient::establishConn() {
   auto rcv = std::make_unique<Connection>(SERVER_IP, SERVER_PORT, true);
   rcv->open();
   this->conn = std::move(rcv);
-} 
+}
 bool ChatRoomClient::hasUsr(std::string ip) {
   std::shared_lock<std::shared_mutex> lock(iolock);
-  return usrs.find(ip) != usrs.end();
+  return usrs->find(ip) != usrs->end();
 }
-  
+
 void ChatRoomClient::recHandler() {
   while (1) {
     try {
@@ -65,10 +64,10 @@ void ChatRoomClient::recHandler() {
     }
     parserClient.recParser(conn->getBuf(), conn->getBufSize());
   }
-}  
-  
+}
+
 void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
-  
+
   std::thread thread([msg, tarIp, this]() {
     try {
       MsgToken tk = tarIp == "cmb"
@@ -85,6 +84,10 @@ void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
     }
   });
   thread.join();
-} 
-  
-ChatRoomClient::ChatRoomClient() { usrs["cmb"] = std::move(makeCVP()); }
+}
+
+ChatRoomClient::ChatRoomClient() {
+  usrs = std::make_shared<std::unordered_map<std::string, CVP>>(
+      std::unordered_map<std::string, CVP>());
+  (*usrs)["cmb"] = std::move(makeCVP());
+}

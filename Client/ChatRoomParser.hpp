@@ -104,7 +104,7 @@ public:
     // 1. from client
     if (in[0] == '1') {
       if (!chatRoomClient.hasUsr(ip))
-        chatRoomClient.usrs[ip] = makeCVP();
+        (*chatRoomClient.usrs)[ip] = makeCVP();
       fromHandler(in.get(), ip);
       // 2. Broadcast
     } else if (in[0] == '2') {
@@ -117,9 +117,9 @@ public:
       if (!chatRoomClient.usrListChange) {
         //锁！锁！锁！
         std::unique_lock<std::shared_mutex> lock(chatRoomClient.iolock);
-        chatRoomClient.usrs.clear();
-        chatRoomClient.usrs["cmb"] = makeCVP();
-        chatRoomClient.usrs[serverString] = makeCVP();
+        chatRoomClient.usrs = std::make_shared<std::unordered_map<std::string, CVP>>(std::unordered_map<std::string, CVP>());
+        (*chatRoomClient.usrs)["cmb"] = makeCVP();
+        (*chatRoomClient.usrs)[serverString] = makeCVP();
         lock.unlock();
         chatRoomClient.usrListChange = true;
       }
@@ -143,7 +143,7 @@ private:
         chatRoomClient.usrListChange = false;
         return;
       }
-      chatRoomClient.usrs[ip] = makeCVP();
+      (*chatRoomClient.usrs)[ip] = makeCVP();
     }
     return;
   }
