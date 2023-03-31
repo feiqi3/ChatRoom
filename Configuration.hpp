@@ -42,19 +42,6 @@ public:
       return;
     }
     isInit = true;
-
-    auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        "ChatRoomLogger", true);
-
-#ifdef SERVER
-    auto serverSink =
-        std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
-    spdlog::set_default_logger(std::make_shared<spdlog::logger>(
-        "Server", (spdlog::sinks_init_list){serverSink, fileSink}));
-#else
-    spdlog::set_default_logger(
-        std::make_shared<spdlog::logger>("Client", fileSink));
-#endif
     spdlog::flush_every(std::chrono::seconds(1));
     spdlog::set_level(spdlog::level::trace);
 #ifdef PROD

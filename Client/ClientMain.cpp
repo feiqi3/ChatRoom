@@ -14,6 +14,10 @@
 ucontext_t reTry;
 
 int main() {
+  auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+      "ChatRoomLogger", true);
+  spdlog::set_default_logger(
+      std::make_shared<spdlog::logger>("Client", fileSink));
   spdlogConfig;
   getcontext(&reTry);
   chatRoomClient.GetInfoFromServer();
