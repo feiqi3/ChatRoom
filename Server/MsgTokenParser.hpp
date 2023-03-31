@@ -62,7 +62,8 @@ public:
       break;
     }
     }
-
+    //Never mess with raw ptr
+    //TODO: Change std::shared<char[]> to std::stringstream
     memset(byte.get() + 1, '\0', len - 1);
     memcpy(byte.get() + 2, mt.addr.c_str(), mt.addr.size());
     memcpy(byte.get() + mt.addr.size() + 2 + 1, mt.msg.c_str(), mt.msg.size());
