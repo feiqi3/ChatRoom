@@ -1,7 +1,8 @@
 #pragma once
 #include "spdlog/fmt/bundled/core.h"
-#include <memory>
+#include "spdlog/sinks/ansicolor_sink.h"
 #include <iostream>
+#include <memory>
 #ifndef CONFIG
 #define CONFIG
 #include <arpa/inet.h>
@@ -16,10 +17,10 @@
 #include <mutex>
 #include <netinet/in.h>
 #include <spdlog/common.h>
+#include <spdlog/fmt/bundled/os.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/fmt/bundled/os.h>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string.h>
@@ -46,7 +47,8 @@ public:
         "ChatRoomLogger", true);
 
 #ifdef SERVER
-    auto serverSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    auto serverSink =
+        std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
     spdlog::set_default_logger(std::make_shared<spdlog::logger>(
         "Server", (spdlog::sinks_init_list){serverSink, fileSink}));
 #else
@@ -65,10 +67,10 @@ private:
   inline static bool isInit = false;
 } inline spdlogConfig; // Register
 
-inline void wait4Enter(){
+inline void wait4Enter() {
   fmt::print("Press enter to go on.");
   std::string in;
-  std::cin>>in;
+  std::cin >> in;
 }
 
 #endif
