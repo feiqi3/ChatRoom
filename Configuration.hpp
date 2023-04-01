@@ -30,9 +30,8 @@
 #include <thread>
 #include <unistd.h>
 
-#define SERVER_IP "Your Server IP"
+#define SERVER_IP INADDR_ANY 
 
-constexpr int MAX_THREAD = 128;
 constexpr ushort SERVER_PORT = 6666;
 
 class spdConfig {

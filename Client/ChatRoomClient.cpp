@@ -62,8 +62,7 @@ void ChatRoomClient::recHandler() {
 }
 
 void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
-
-  std::thread thread([msg, tarIp, this]() {
+    canJump = false;
     try {
       MsgToken tk = tarIp == "cmb"
                         ? MsgToken(MsgToken::Broadcast, msg, nullString)
@@ -75,8 +74,7 @@ void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
       wait4Enter();
       setcontext(&Interact::contextCmd);
     }
-  });
-  thread.join();
+    canJump = true;
 }
 
 ChatRoomClient::ChatRoomClient() {
