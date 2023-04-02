@@ -316,7 +316,7 @@ void Interact::InteractiveParser(const std::string &str) {
         fmt::print("{} ", i.first);
       }
       lock.unlock();
-      fmt::print("\nYou can chat with them.");
+      fmt::print("\nYou can chat with them.\n");
     } else if (word == "back") {
       showChat(CurrentChatting);
     } else {

@@ -30,7 +30,7 @@
 #include <thread>
 #include <unistd.h>
 
-#define SERVER_IP INADDR_ANY 
+#define SERVER_IP "8.130.88.176" 
 
 constexpr ushort SERVER_PORT = 6666;
 
