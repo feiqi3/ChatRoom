@@ -310,7 +310,7 @@ void Interact::InteractiveParser(const std::string &str) {
       fmt::print("User online now:\n");
       std::shared_lock<std::shared_mutex> lock(chatRoomClient.iolock);
       for (auto &&i : *chatRoomClient.usrs) {
-        if (i.first == "cmb"||i.first =="server") {
+        if (i.first == "cmb" || i.first == "server") {
           continue;
         }
         fmt::print("{} ", i.first);
@@ -319,9 +319,9 @@ void Interact::InteractiveParser(const std::string &str) {
       fmt::print("\nYou can chat with them.\n");
     } else if (word == "back") {
       showChat(CurrentChatting);
-    }else if(word == "quit"){
-        std::terminate();
-      } else {
+    } else if (word == "quit") {
+      std::terminate();
+    } else {
       ServerBubble("Unknown command.", "Client msg").print();
     }
   }
@@ -383,11 +383,11 @@ void Interact::showChat(const std::string &ip) {
   // boost里有个可以分段加载文件的库，换成那个，每次只加载最后几条消息，性能可以高很多
   // TODO: 实现增量加载
   auto c = (*chatRoomClient.usrs)[ip];
-  std::unique_lock<std::mutex> lock(*c.first);
 #ifndef DEBUG
   while (1)
 #endif // DEBUG
   {
+    std::unique_lock<std::mutex> lock(*c.first);
     canJump = false;
 #ifndef DEBUG
     system("clear");
@@ -399,7 +399,11 @@ void Interact::showChat(const std::string &ip) {
     }
     canJump = true;
 #ifndef DEBUG
-    c.second->wait(lock);
+//loop to avoid spurious wakeups 
+    while (!*c.second.first) {
+      c.second.second->wait(lock);
+    }
+    *c.second.first = false;
 #else
     lock.unlock();
 #endif

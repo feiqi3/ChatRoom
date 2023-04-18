@@ -5,6 +5,7 @@
 #include "../Connection.hpp"
 #include "ChatSave.hpp"
 #include "Display.hpp"
+#include <atomic>
 #include <condition_variable>
 #include <fstream>
 #include <memory>
@@ -21,10 +22,10 @@
 inline std::string CurrentChatting = "cmb";
 
 using CVP = std::pair<std::shared_ptr<std::mutex>,
-                      std::shared_ptr<std::condition_variable>>;
+                      std::pair<std::shared_ptr<std::atomic_bool>,std::shared_ptr<std::condition_variable>>>;
 inline CVP makeCVP() {
   return CVP(std::shared_ptr<std::mutex>(new std::mutex),
-             std::shared_ptr<std::condition_variable>(new std::condition_variable()));
+             std::pair(std::shared_ptr<std::atomic_bool>(new std::atomic_bool(false)),std::shared_ptr<std::condition_variable>(new std::condition_variable())));
 }
 class ParserClient;
 

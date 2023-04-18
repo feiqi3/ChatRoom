@@ -80,5 +80,5 @@ void ChatRoomClient::msgSend(const std::string &msg, std::string tarIp) {
 ChatRoomClient::ChatRoomClient() {
   usrs = std::make_shared<std::unordered_map<std::string, CVP>>(
       std::unordered_map<std::string, CVP>());
-  (*usrs)["cmb"] = std::move(makeCVP());
+  (*usrs)["cmb"] = (makeCVP());
 }

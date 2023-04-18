@@ -36,8 +36,10 @@ void ChatSL::save(const std::string &addr, std::string msg, char type,
   file << fmtTime << "\n";
   file << msg << std::endl;
   //不为自己
-  if (type != 'u')
-    c.second->notify_one();
+  if (type != 'u') {
+    *c.second.first = true;
+    c.second.second->notify_all();
+  }
 }
 
 auto ChatSL::load(const std::string &addr)
