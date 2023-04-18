@@ -28,7 +28,7 @@
 #include <utility>
 
 bool cmdMode = false;
-std::atomic_bool canJump = false;
+std::atomic_bool canJump = true;
 
 void Display::SetScrWidthAndMsgLen() {
   if (!isatty(STDOUT_FILENO)) {
@@ -319,7 +319,9 @@ void Interact::InteractiveParser(const std::string &str) {
       fmt::print("\nYou can chat with them.\n");
     } else if (word == "back") {
       showChat(CurrentChatting);
-    } else {
+    }else if(word == "quit"){
+        std::terminate();
+      } else {
       ServerBubble("Unknown command.", "Client msg").print();
     }
   }
@@ -343,9 +345,8 @@ void helpHandler() {
   fmt::print("Enter \'Send $WHAT YOU WANT TO SAY$\', the massage will send to "
              "your last chat.\n");
   fmt::print("enter \'user\' to see who is online now.");
-  fmt::print("enter \'back\' to back to chat room.");
-  fmt::print("Now, goto command mode.");
-  wait4Enter();
+  fmt::print("enter \'back\' to back to chat room.\n");
+  fmt::print("Now, goto command mode.\n");
   setcontext(&Interact::contextCmd);
   return;
 }

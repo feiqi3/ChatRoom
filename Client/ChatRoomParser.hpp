@@ -139,7 +139,7 @@ private:
     while (!isEnd) {
       std::string ip = getWord(msg, ii, isEnd);
       if (ip == "N") {
-        ServerBubble("User list has been updated.", "From client.").print();
+        //ServerBubble("User list has been updated.", "From client.").print();
         chatRoomClient.usrListChange = false;
         return;
       }
